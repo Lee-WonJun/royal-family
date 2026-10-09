@@ -14,7 +14,8 @@ for(const [f,n]of [['Pretendard-Regular.ttf','Pretendard'],['Pretendard-Bold.ttf
 const {PresentationFile,FileBlob}=await import(pathToFileURL(req.resolve('@oai/artifact-tool')).href);
 const source=process.argv[2]||path.join(ROOT,'ppt/명문가_발표초안_v16_IR.pptx');
 const output=process.argv[3]||path.join(ROOT,'ppt/명문가_발표초안_v16_IR.pdf');
-const build=path.join(ROOT,'.codex/ppt-build-20261009-v16');
+const build=process.argv[4]||path.join(ROOT,'.codex/ppt-build-20261009-v16');
+await fs.mkdir(build,{recursive:true});
 const candidate=path.join(build,'presentation-before-audio.pdf');
 const deck=await PresentationFile.importPptx(await FileBlob.load(source));
 let route='artifact-vector-pdf';
