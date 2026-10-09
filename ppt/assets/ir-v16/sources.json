@@ -1,0 +1,31 @@
+{
+  "assets": [
+    {
+      "file": "improvement-request.png",
+      "pixels": [
+        668,
+        35
+      ],
+      "sha256": "9b407de9cbbdde72e4f94cbcf85960cf878ea6482b741d2fd7f2c1b50c28a673",
+      "source": "User-provided screenshot, unchanged"
+    },
+    {
+      "file": "review-background.png",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "sha256": "e0849cee2e551f78ce720aa5bf09ae5972b31d1ec9e44abd4642fb3567f4bc2f",
+      "source": "v15 slide 27 full-HD render"
+    },
+    {
+      "file": "review-feedback.png",
+      "pixels": [
+        941,
+        243
+      ],
+      "sha256": "d32083c1449b801d46c22754700121132d72c82f73daf907b01684b6f67f674e",
+      "source": "User-provided screenshot, unchanged"
+    }
+  ]
+}

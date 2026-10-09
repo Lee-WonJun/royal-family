@@ -16,9 +16,9 @@ for(const [f,n] of [['Pretendard-Regular.ttf','Pretendard'],['Pretendard-Bold.tt
 for(const [f,n] of [['SUIT-Regular.ttf','SUIT'],['SUIT-Bold.ttf','SUIT'],['SUIT-SemiBold.ttf','SUIT SemiBold']])GlobalFonts.registerFromPath(path.join(ROOT,'ppt/assets/fonts',f),n);
 const SKILL='C:/Users/dldnj/.codex/plugins/cache/openai-primary-runtime/presentations/26.1007.11041/skills/presentations';
 const {finalizePresentation,applyPresentationChartFont}=await import(pathToFileURL(path.join(SKILL,'container_tools/artifact_tool_utils.mjs')).href);
-const PPT=path.join(ROOT,'ppt'),ASSETS=path.join(PPT,'assets'),BUILD=path.join(ROOT,'.codex/ppt-build-20261009-v15');
-const REV=process.env.PPT_REVISION||'v15_IR',FINAL=process.env.PPT_FINAL_PATH||path.join(PPT,`명문가_발표초안_${REV}.pptx`);
-const PREVIEW=process.env.PPT_PREVIEW_DIR||path.join(PPT,'preview-v15');
+const PPT=path.join(ROOT,'ppt'),ASSETS=path.join(PPT,'assets'),BUILD=path.join(ROOT,'.codex/ppt-build-20261009-v16');
+const REV=process.env.PPT_REVISION||'v16_IR',FINAL=process.env.PPT_FINAL_PATH||path.join(PPT,`명문가_발표초안_${REV}.pptx`);
+const PREVIEW=process.env.PPT_PREVIEW_DIR||path.join(PPT,'preview-v16');
 await fs.mkdir(BUILD,{recursive:true});await fs.mkdir(PREVIEW,{recursive:true});
 const market=JSON.parse(await fs.readFile(path.join(PPT,'data/market-estimate-v6.json'),'utf8'));
 const years=JSON.parse(await fs.readFile(path.join(PPT,'data/precedent-year-search-20261009.json'),'utf8'));
@@ -330,6 +330,17 @@ function chart(s,type,opts){const q=s.charts.add(type,opts);applyPresentationCha
  }
 }
 {
+ const s=slide({number:false,sources:[src('ppt/assets/ir-v16/sources.json')],notes:'사용자가 제공한 AI 리뷰의 개선 제안과 후속 개선 작업 지시 캡처다. 기존 리뷰 페이지를 배경으로 유지한다.'});
+ await image(s,'ir-v16/review-background.png',0,0,960,540,'기존 리뷰 페이지 전체 배경');
+ shape(s,0,0,960,540,C.paper+'/78');
+ const panels=[['review-feedback.png',50,157,860,'사용자 제공 리뷰 개선점 캡처'],['improvement-request.png',118,404,790,'사용자 제공 후속 개선 작업 지시 캡처']];
+ for(const [file,x,y,w,alt]of panels){
+  const meta=await sharp(path.join(ASSETS,'ir-v16',file)).metadata(),h=w*meta.height/meta.width;
+  const lift=shape(s,x,y,w,h,'#181818');lift.shadow='0px 9px 28px #173F49/25';
+  await image(s,'ir-v16/'+file,x,y,w,h,alt);
+ }
+}
+{
  const s=slide({bg:C.navy,number:false,notes:'업무 기록을 바탕으로 확인할 일을 안내하는 Events 흐름을 소개한다.'});text(s,'One More',65,115,836,124,88,{numeric:true,color:C.paper});text(s,'Thing',62,251,839,133,103,{numeric:true,color:C.paper});
 }
 {
@@ -352,11 +363,11 @@ function chart(s,type,opts){const q=s.charts.add(type,opts);applyPresentationCha
  text(s,'우리 가문은',58,119,377,43,27);text(s,'명문가',54,181,442,126,91,{font:SERIF,bold:true});text(s,'종중 운영의 모든것',59,332,424,43,27);
 }
 
-if(p.slides.items.length!==31)throw Error('Unexpected slide count');
+if(p.slides.items.length!==32)throw Error('Unexpected slide count');
 for(const k of ['TAM','SAM','SOM']){const value=market[k].annual_subscription_revenue_won??market[k].annual_run_rate_won;if(market[k].clans*market.subscription_assumption.annual_fee_per_clan!==value)throw Error('Market arithmetic: '+k);}
-await fs.writeFile(path.join(BUILD,'copy-v15.json'),JSON.stringify(copy,null,2));
+await fs.writeFile(path.join(BUILD,'copy-v16.json'),JSON.stringify(copy,null,2));
 await fs.writeFile(path.join(BUILD,'device-placements.json'),JSON.stringify(devicePlacements,null,2));
-await fs.writeFile(path.join(BUILD,'authored-v15-proto.json'),JSON.stringify(p.toProto()));
+await fs.writeFile(path.join(BUILD,'authored-v16-proto.json'),JSON.stringify(p.toProto()));
 const candidate=path.join(BUILD,`candidate-${REV}.pptx`);
 await(await PresentationFile.exportPptx(p)).save(candidate);console.log('DRAFT_EXPORTED '+candidate);
 execFileSync(path.join(BUNDLE,'python/python.exe'),[path.join(PPT,'source/embed-media.py'),'pptx',candidate,path.join(ASSETS,'ir-v14/family-call.m4a')],{stdio:'inherit'});
@@ -367,6 +378,6 @@ for(const [i,s]of deck.slides.items.entries()){
  await fs.writeFile(path.join(PREVIEW,`slide-${String(i+1).padStart(2,'0')}.png`),new Uint8Array(await(await deck.export({slide:s,format:'png',scale:1.333333})).arrayBuffer()));
  console.log('RENDERED '+(i+1));
 }
-await fs.writeFile(path.join(BUILD,'revision-v15-receipt.json'),JSON.stringify({final:FINAL,sha256:result.finalSha256,slides:31,nativeCharts:chartOwners,reviewSlide:27,loginSlide:30,deviceMockupSlides:devicePlacements.map(d=>d.slide),devicePlacements,sourceDeck:src('ppt/명문가_발표초안_v13_IR.pptx'),sourceDeckSha256:createHash('sha256').update(await fs.readFile(path.join(PPT,'명문가_발표초안_v13_IR.pptx'))).digest('hex'),template:'C:/Users/dldnj/OneDrive/문서/Premium Cloud Widescreen Multicolored.pptx',templateDeviceSlides:[306,312],evidenceAsOf:evidence.as_of},null,2));
+await fs.writeFile(path.join(BUILD,'revision-v16-receipt.json'),JSON.stringify({final:FINAL,sha256:result.finalSha256,slides:32,nativeCharts:chartOwners,reviewSlide:27,reviewOverlaySlide:28,loginSlide:31,deviceMockupSlides:devicePlacements.map(d=>d.slide),devicePlacements,sourceDeck:src('ppt/명문가_발표초안_v15_IR.pptx'),sourceDeckSha256:createHash('sha256').update(await fs.readFile(path.join(PPT,'명문가_발표초안_v15_IR.pptx'))).digest('hex'),template:'C:/Users/dldnj/OneDrive/문서/Premium Cloud Widescreen Multicolored.pptx',templateDeviceSlides:[306,312],evidenceAsOf:evidence.as_of},null,2));
 console.log('DONE '+FINAL);
 process.exit(0);
