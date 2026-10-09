@@ -44,7 +44,7 @@
   ($ :button {:type "button" :class (str "icon-button " class) :disabled disabled :aria-label label :title label :on-click on-click}
      ($ icon {:name name})))
 (defui badge [{:keys [children tone]}] ($ :span {:class (str "badge " tone)} children))
-(def status-labels {"draft" "초안" "in_review" "검토 중" "internally_confirmed" "확인 완료" "needs_review" "검토 필요"
+(def status-labels {"draft" "초안" "in_review" "검토 중" "internally_confirmed" "확인 완료" "needs_review" "검토 필요" "reference" "공식 자료"
                     "pending" "미응답" "agree" "동의" "disagree" "거절" "withdrawn" "철회" "failed" "실패" "completed" "완료"
                     "queued" "대기 중" "running" "처리 중" "cancelled" "사용 중지"})
 (defui status [{:keys [value]}] ($ badge {:tone (case value "in_review" "blue" "needs_review" "amber" "failed" "red" "")} (get status-labels value value)))

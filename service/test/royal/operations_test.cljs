@@ -3,7 +3,7 @@
             [clojure.test.check.generators :as gen] [clojure.test.check.properties :as prop]
             [royal.domain-test :refer [ctx check! code apply!]]
             [royal.seed :as seed] [royal.meetings :as meetings]
-            [royal.accounting :as accounting] [royal.organization :as org]))
+            [royal.accounting :as accounting] [royal.organization :as org] [royal.assets :as assets]))
 
 (deftest meeting-records-are-independent-and-historical
   (let [s (seed/initial-state 1) original (first (get-in s [:meetings :items]))
@@ -40,3 +40,10 @@
     (is (= (select-keys s [:documents :meetings :assets :accounting]) (select-keys next [:documents :meetings :assets :accounting])))
     (is (= (get-in s [:organization :relations]) (get-in next [:organization :relations])))
     (is (= :forbidden (code #(org/handover (:organization s) (assoc ctx :role "member") p))))))
+
+(deftest pending-and-stale-checks-preserve-last-success-without-change-events
+  (doseq [status ["pending" "stale" "failed"]]
+    (let [s (seed/initial-state 1) after (apply! s "asset.check" {:asset_id "asset01" :status status} status)]
+      (is (= (get-in s [:assets :snapshots]) (get-in after [:assets :snapshots])))
+      (is (= (:outbox s) (:outbox after)))
+      (is (= status (get-in after [:assets :items 0 :check_status]))))))

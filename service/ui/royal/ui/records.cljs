@@ -14,6 +14,7 @@
         version (or (find-id (map #(assoc % :id (:version %)) (:versions document)) version-num) (latest document))
         draft-key (str (:id document) ":" (or edit-version (:version document)))
         draft-text (get drafts draft-key (:body version))
+        reason-key (str draft-key ":reason") revision-reason (get drafts reason-key "")
         pick (fn [id] (set-mobile-detail true)
                (when (not= id (:id document)) (select id) (set-version nil) (set-editing false) (set-tab :draft)))]
     (uix/use-effect (fn []
@@ -41,7 +42,7 @@
          ($ :article {:class "record-detail" :aria-label "문서 상세"}
             ($ :div {:class "record-detail-head"}
                ($ :button {:class "mobile-back text-button" :on-click #(set-mobile-detail false)} ($ icon {:name :back :size 17}) "목록")
-               ($ :div {:class "section-label"} ($ :span {:class "eyebrow"} (:kind document)) ($ badge "시연"))
+               ($ :div {:class "section-label"} ($ :span {:class "eyebrow"} (:kind document)) ($ badge (if (= "public_source" (:mode document)) "공식 자료" "시연")))
                ($ :h2 (:title document))
                ($ :div {:class "muted metadata"} (or (:meeting_date document) "2026. 10. 09") ($ :span "·") "이정호" ($ :span "·") ($ status {:value (:status version)})))
             ($ tabs {:items [[:draft "문서 초안"] [:original "원문"] [:history "버전 이력"] [:ai "AI 작업"]] :value tab :on-change #(do (set-tab %) (set-editing false) (set-mobile-detail true))})
@@ -82,12 +83,14 @@
                  ($ :<>
                     ($ :div {:class "section-label document-version"}
                        ($ :span {:class "muted small"} (str "문서 v" (:version version) (when (= (:mode document) "mock") " · 예시 초안")))
-                       ($ :button {:class "text-button" :disabled busy :on-click #(do (set-version nil) (set-edit-version (:version document)) (set-editing (not editing)))} (if editing "편집 닫기" "수정")))
+                       (when-not (= "public_source" (:mode document))
+                         ($ :button {:class "text-button" :disabled busy :on-click #(do (set-version nil) (set-edit-version (:version document)) (set-editing (not editing)))} (if editing "편집 닫기" "수정"))))
                     (if editing
                       ($ :div {:class "editor"}
                          ($ :textarea {:aria-label "문서 내용" :disabled busy :value draft-text :on-change #(set-drafts (assoc drafts draft-key (val-of %))) :rows 16})
+                         ($ field {:label "정정 사유"} ($ :input {:value revision-reason :disabled busy :required true :on-change #(set-drafts (assoc drafts reason-key (val-of %)))}))
                          (when (and edit-version (not= edit-version (:version document))) ($ :p {:class "inline-feedback error"} "새 버전이 있습니다. 작성 중인 내용은 유지됩니다. 최신 원문을 확인해 주세요."))
-                         ($ :div {:class "dialog-actions"} ($ button {:variant "primary" :disabled busy :on-click #(-> (command "document.revise" {:id (:id document) :expected_version edit-version :body draft-text} "새 버전을 저장했습니다.")
+                         ($ :div {:class "dialog-actions"} ($ button {:variant "primary" :disabled (or busy (str/blank? revision-reason)) :on-click #(-> (command "document.revise" {:id (:id document) :expected_version edit-version :body draft-text :reason revision-reason} "새 버전을 저장했습니다.")
                                                                                                   (.then (fn [ok] (when ok (set-editing false) (set-version nil)))))} "새 버전 저장")))
                       ($ :div {:class "document-text"}
                          (for [[i section] (map-indexed vector (str/split (:body version) #"\n\n"))]
@@ -102,13 +105,13 @@
                             ($ :button {:class "text-button" :on-click #(open-dialog :resolve document)} "확인 기록"))))
                     (when (:review_note version) ($ :div {:class "review-note"} ($ :strong "검토 기록") ($ :p (:review_note version)))))))
             ($ :footer {:class "record-footer"}
-               ($ button {:icon-name :download :on-click #(js/window.print)} "PDF·인쇄")
-               ($ :div {:class "actions"}
+               ($ button {:icon-name :download :on-click #(open-dialog :export {:document_id (:id document) :version (:version version)})} "PDF 내보내기")
+               (when-not (= "public_source" (:mode document)) ($ :div {:class "actions"}
                   (when (not= "internally_confirmed" (:status (latest document)))
                     ($ button {:on-click #(open-dialog :review-note document)} "검토 의견"))
                   ($ button {:variant "primary" :disabled (or busy editing (= "internally_confirmed" (:status (latest document))))
                              :on-click #(command "document.review" {:id (:id document) :expected_version (:version document)
                                                                    :action (if (= "draft" (:status (latest document))) "submit" "confirm")}
                                                   (if (= "draft" (:status (latest document))) "검토를 요청했습니다." "검토를 완료했습니다."))}
-                     (case (:status (latest document)) "draft" "검토 요청" "internally_confirmed" "확인 완료" "검토 완료")))))
+                     (case (:status (latest document)) "draft" "검토 요청" "internally_confirmed" "확인 완료" "검토 완료"))))))
          ($ c/empty-state {:title "선택한 기록이 없습니다."})))))

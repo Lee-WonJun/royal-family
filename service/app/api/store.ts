@@ -31,6 +31,16 @@ export async function readState(): Promise<State> {
       const refreshed = await connection.prepare("SELECT body FROM workspaces WHERE id = ?").bind(workspaceId).first<{body: string}>();
       return JSON.parse(refreshed!.body);
     }
+    if ((state.reference_version || 0) < 1) {
+      // Add verified, read-only public references without replacing saved demo work.
+      const additions = seed.documents.records.filter((record: any) => record.mode === 'public_source' && !state.documents.records.some((saved: any) => saved.id === record.id));
+      const upgraded = { ...state, revision: state.revision + 1, reference_version: 1,
+        documents: { ...state.documents, records: [...state.documents.records, ...additions] },
+        legal: { ...state.legal, sources: seed.legal.sources } };
+      await connection.prepare('UPDATE workspaces SET revision = ?, body = ? WHERE id = ? AND revision = ? AND generation = ?')
+        .bind(upgraded.revision, JSON.stringify(upgraded), workspaceId, state.revision, state.generation).run();
+      return readState();
+    }
     return state;
   }
   const seed = initialState(1);

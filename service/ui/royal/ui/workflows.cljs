@@ -113,12 +113,14 @@
                         ($ :dt "지목·면적") ($ :dd (str (:land_category current) " · " (.toLocaleString (:area_m2 current) "ko-KR") "㎡"))
                         ($ :dt "자료 출처") ($ :dd ($ :a {:class "parcel-reference-link" :href "https://www.kgeop.go.kr/info/infoMap.do?initMode=L" :target "_blank" :rel "noreferrer"} "토지 · K-GeoP 공개 자료") ($ :p {:class "muted small"} "등기부 · 시연 목업"))
                         ($ :dt "토지 확인일") ($ :dd (subs (:last_checked_at a) 0 10))
-                        ($ :dt "확인 상태") ($ :dd ($ status {:value (if (= "failed" (:check_status a)) "failed" "기준 자료")}))))
+                        ($ :dt "확인 상태") ($ :dd ($ status {:value (get {"failed" "확인 실패" "pending" "확인 대기" "stale" "확인 지연"} (:check_status a) "기준 자료")}))))
                   ($ :p {:class "muted small source-note"} "지도는 공개 필지 경계입니다. 등기부 재조회·소유자 변경·알림은 목업이며 실제 등기 발급·결제·소유권 변동이 아닙니다.")
-                  ($ :h2 {:class "section-gap"} "연결 계약")
+                  ($ :div {:class "section-toolbar section-gap"} ($ :h2 "연결 계약") ($ button {:on-click #(open-dialog :contract)} "계약 등록"))
                   (for [contract (get-in data [:assets :contracts])]
-                    ($ :button {:key (:id contract) :class "task-row" :on-click #(do (select-doc (:document_id contract)) (navigate :records))}
-                       ($ :div ($ :strong (:title contract)) ($ :p {:class "muted"} "태봉동 종중 임야")) ($ badge (:status contract)) ($ icon {:name :chevron}))))
+                    ($ :div {:key (:id contract) :class "task-row"}
+                       ($ :button {:class "text-button" :on-click #(do (select-doc (:document_id contract) (or (:document_version contract) 1)) (navigate :records))}
+                          (:title contract)) ($ badge (:status contract))
+                       ($ :button {:class "text-button" :on-click #(open-dialog :contract contract)} "기록 수정"))))
          :ledger ($ :section
                     ($ :div {:class "section-toolbar"} ($ :h2 "거래 내역") ($ button {:variant "primary" :icon-name :plus :on-click #(open-dialog :transaction)} "거래 등록"))
                     ($ :div {:class "summary-strip"}
@@ -140,7 +142,11 @@
                     ($ :div {:class "section-toolbar"} ($ :span {:class "muted small"} "시연 금액 · 실제 금융 거래 없음")
                        ($ button {:on-click #(open-dialog :document-create {:title "10월 결산 초안" :body (str "10월 결산\n\n수입: " (won income) "\n지출: " (won expense) "\n잔액: " (won (- income expense)) "\n\n증빙 미등록 거래를 확인해 주세요.")})} "결산 작성")))
          :changes ($ :section
-                     ($ :div {:class "section-toolbar"} ($ :h2 "자료 변경") ($ button {:disabled busy :on-click #(command "asset.failure" {:asset_id (:id a)} "확인 실패를 기록했습니다.")} "확인 실패 시연"))
+                     ($ :div {:class "section-toolbar"} ($ :h2 "자료 변경")
+                        ($ :select {:aria-label "자료 확인 상태" :disabled busy :value (if (= "confirmed" (:check_status a)) "" (:check_status a))
+                                    :on-change #(command "asset.check" {:asset_id (:id a) :status (val-of %)} "확인 상태를 기록했습니다.")}
+                           ($ :option {:value "" :disabled true} "기준 자료 확인됨") ($ :option {:value "pending"} "확인 대기")
+                           ($ :option {:value "stale"} "확인 지연") ($ :option {:value "failed"} "확인 실패")))
                      (if (seq (get-in data [:assets :changes]))
                        (for [change (reverse (get-in data [:assets :changes]))]
                          ($ :div {:class "change-row" :key (:id change)}

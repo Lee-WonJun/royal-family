@@ -89,7 +89,8 @@
                    ($ :div {:class "section-label"} ($ :h2 "등록 근거") ($ :span {:class "muted small"} "조회 2026. 10. 09"))
                    (for [source (get-in data [:legal :sources])]
                      ($ :a {:class "source-card" :key (:id source) :href (:url source) :target "_blank" :rel "noreferrer"}
-                        ($ :div ($ badge (:kind source)) ($ :h3 (:title source)) ($ :p {:class "muted"} (:summary source)))
+                        ($ :div ($ badge (:kind source)) ($ :h3 (:title source)) ($ :p {:class "muted"} (:summary source))
+                           ($ :p {:class "muted small"} (str (if (= "판례" (:kind source)) "선고 " "시행 ") (:effective_date source) " · 조회 " (:observed_at source))))
                         ($ icon {:name :arrow})))
                    ($ :h2 {:class "section-gap"} "연결 규약")
                    (for [d docs :when (= "규약" (:kind d))]

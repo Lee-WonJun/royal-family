@@ -41,7 +41,7 @@
 (deftest immutable-versions
   (check! "PBT-04" (prop/for-all [body gen/string-alphanumeric]
                      (let [s (seed/initial-state 1) before (docs/record! (:documents s) "doc03")
-                           s2 (apply! s "document.revise" {:id "doc03" :expected_version 1 :body (str "개정 " body)} "r")
+                           s2 (apply! s "document.revise" {:id "doc03" :expected_version 1 :body (str "개정 " body) :reason "시연 규약 보완"} "r")
                            after (docs/record! (:documents s2) "doc03")]
                        (and (= (:versions before) (vec (butlast (:versions after))))
                             (= "draft" (:status (docs/latest after))) (= 2 (:version after)))))))

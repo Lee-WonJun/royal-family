@@ -4,6 +4,7 @@
             [royal.ui.members :as members] [royal.ui.records :as records] [royal.ui.workflows :as workflows]
             [royal.ui.legal :as legal] [royal.ui.dialogs :as dialogs] [royal.ui.accounts :as accounts]
             [royal.ui.ai :as ai]
+            [royal.ui.exports :as exports]
             [royal.ui.transport :as transport :refer [request-json post-json]]))
 
 (defui sidebar [{:keys [page navigate open-settings open-search open-notifications open-profile persona unread-count]}]
@@ -236,6 +237,7 @@
                                      ($ :p {:class "muted small"} (if (= "registry_owner_changed" (:kind n))
                                                                    (str (:before_owner n) " → " (:after_owner n)) "동의 요청 · 시연")))
                                   ($ badge (if (= "read" (:state n)) "읽음" "안 읽음")))))
+           :export ($ exports/export-dialog {:data data :item (:item modal) :reload load :on-close #(set-modal nil)})
            :profile ($ c/dialog {:title "내 프로필" :on-close #(set-modal nil)}
                         ($ :div {:class "profile-detail"} ($ :span {:class "avatar large"} "이") ($ :h3 (:name persona)) ($ badge (:role persona)))
                         ($ :dl {:class "definition-list"} ($ :dt "종중") ($ :dd "임영대군파 종중") ($ :dt "권장 시나리오") ($ :dd (:scenario persona))

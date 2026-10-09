@@ -35,6 +35,28 @@
   (let [a (asset! assets (:asset_id p))]
     (update assets :items c/replace-item (assoc a :check_status "failed" :last_attempt_at (:now ctx)))))
 
+(defn record-check [assets ctx p]
+  (let [asset (asset! assets (:asset_id p))]
+    (c/ensure! (#{"pending" "stale" "failed"} (:status p)) :invalid_input "확인 상태를 선택해 주세요.")
+    (-> assets
+        (update :items c/replace-item (assoc asset :check_status (:status p) :last_attempt_at (:now ctx)))
+        (update :checks (fnil conj []) {:id (:id ctx) :asset_id (:asset_id p) :status (:status p)
+                                      :at (:now ctx) :recorded_by (:principal_id ctx) :is_demo true}))))
+
+(defn save-contract [assets ctx p]
+  (asset! assets (:asset_id p))
+  (c/ensure! (#{"초안" "검토 중" "내부 확인" "종료"} (:status p)) :invalid_input "계약 기록 상태를 선택해 주세요.")
+  (let [existing (when (:id p) (c/find! (:contracts assets) (:id p)))
+        existing (when existing (update existing :version #(or % 1)))
+        _ (when existing (c/version! existing (:expected_version p)) (c/text! (:reason p) "변경 사유"))
+        contract (merge (select-keys p [:asset_id :document_id :document_version :status])
+                        {:id (or (:id existing) (:id ctx)) :title (c/text! (:title p) "계약명") :is_demo true
+                         :version (inc (or (:version existing) 0))
+                         :history (cond-> (vec (:history existing)) existing
+                                    (conj {:version (:version existing) :snapshot (dissoc existing :history)
+                                           :reason (:reason p) :at (:now ctx) :recorded_by (:principal_id ctx)}))})]
+    (update assets :contracts (if existing c/replace-item (fn [items item] (conj (vec items) item))) contract)))
+
 (defn registry-records [assets id]
   (let [asset (asset! assets id)
         pnu (:pnu (some #(when (and (= id (:asset_id %)) (= (:parcel asset) (:parcel %))) %) registry-fixtures/baselines))]

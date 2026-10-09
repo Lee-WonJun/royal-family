@@ -5,6 +5,7 @@
              :document-create "새 문서" :resolve "확인 기록" :review-note "검토 의견"
              :transaction "거래 등록·정정" :consent-create "동의 요청" :meeting-create "총회 준비" :meeting-revise "총회 정보 변경"
              :handover "담당자 인수인계" :meeting-opinion "총회 의견"
+             :contract "계약 기록"
              :asset-snapshot "후속 자료 등록" :consultation "상담 준비" :proxy "위임 기록" :reset "초기 데이터로 되돌리기"})
 (defn initial-form [kind item data]
   (merge {:title "" :body "" :note "" :name "" :role "종원" :source "" :reason ""
@@ -15,7 +16,8 @@
          (case kind :asset-snapshot (select-keys item [:owner_name :owner_type :area_m2 :land_category])
                :document-create (select-keys item [:title :body])
                :meeting-revise (select-keys item [:title :date :place :agenda :document_id :regulation_id])
-               :transaction (merge {:document_id ""} (select-keys item [:title :date :direction :amount :document_id])) {})))
+               :transaction (merge {:document_id ""} (select-keys item [:title :date :direction :amount :document_id]))
+               :contract (merge {:status "초안"} (select-keys item [:title :status :document_id])) {})))
 (defui form-dialog [{:keys [kind item data command start-ai on-close feedback]}]
   (let [[form set-form] (uix/use-state #(initial-form kind item data))
         [busy set-busy] (uix/use-state false)
@@ -46,6 +48,9 @@
                    :consent-create (run "consent.create" {:title (:title form) :document_id (:id doc) :document_version (:version doc)
                                                          :targets (vec (:targets form)) :deadline (str (:deadline form) "T14:59:59Z")})
                    :meeting-create (run "meeting.create" meeting-payload)
+                   :contract (run "contract.save" (cond-> {:asset_id (or (:asset_id item) "asset01") :title (:title form) :status (:status form)
+                                                           :document_id (:id doc) :document_version (:version doc)}
+                                                    (:id item) (assoc :id (:id item) :expected_version (or (:version item) 1) :reason (:reason form))))
                    :meeting-revise (run "meeting.revise" (merge meeting-payload {:id (:id item) :expected_version (:version item) :reason (:reason form)}))
                    :handover (run "organization.handover" {:from_id (:from_id form) :from_version (:version (find-id members (:from_id form)))
                                                            :to_id (:to_id form) :to_version (:version (find-id members (:to_id form))) :reason (:reason form)})
@@ -102,6 +107,12 @@
                                ($ :option {:value ""} "선택") (for [m members :when (pred m)] ($ :option {:key (:id m) :value (:id m)} (str (:name m) " · " (:role m)))))))
                          (textarea :reason "이관 내용" 5) ($ :p {:class "muted small"} "명부의 시연 담당자·권한을 변경합니다. 기록과 출처는 유지됩니다."))
             :meeting-opinion ($ :<> ($ :p (get-in item [:member :name])) (textarea :note "의견" 5))
+            :contract ($ :<> (input :title "계약명") document-select
+                            ($ field {:label "기록 상태"} ($ :select {:value (:status form) :on-change #(set-value :status (val-of %))}
+                                (for [status ["초안" "검토 중" "내부 확인" "종료"]] ($ :option {:key status :value status} status))))
+                            (when (:id item) (textarea :reason "변경 사유" 3))
+                            (when (seq (:history item)) ($ :details ($ :summary "변경 이력")
+                               (for [h (reverse (:history item))] ($ :p {:key (:version h)} (str "v" (:version h) " · " (get-in h [:snapshot :title]) " · " (:reason h)))))))
             :asset-snapshot ($ :<> ($ badge "시연 후속 자료") (input :owner_name "소유자 표시") (input :area_m2 "면적(㎡)" "number")
                                ($ :div {:class "form-grid"} (input :owner_type "소유구분") (input :land_category "지목"))
                                ($ button {:on-click #(set-value :owner_name "시연용 변경 종중")} "변경 예시 넣기"))

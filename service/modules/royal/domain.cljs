@@ -30,6 +30,7 @@
                          :requests (meetings/requests (:meetings state)) :issues (check-issues state)}
     "get_member_hierarchy" (org/hierarchy (:organization state) (:member_id p))
     "get_record" (if (:version p) (docs/version! (:documents state) (:id p) (:version p)) (docs/record! (:documents state) (:id p)))
+    "export_records" (docs/export-records (:documents state) ctx (:documents p))
     "search_records" {:records (docs/search-records (:documents state) (:text p)) :mode "keyword"}
     "recommend_experts" (legal/recommend (:legal state) p)
     "check_issues" {:issues (check-issues state) :mode "mock" :status "needs_review"}
@@ -52,6 +53,8 @@
       "document.create" (do (evidence! state (:evidence p)) (update state :documents docs/create-document ctx p))
       "document.revise" (update state :documents docs/revise ctx p)
       "document.review" (update state :documents docs/review ctx p)
+      "export.record" (do (ai/worker! ctx) (evidence! state (:documents p))
+                          (update state :exports (fnil conj []) (assoc p :id (:id ctx) :created_at (:now ctx) :generation (:generation state))))
       "transaction.add" (do (when (:document_id p) (docs/version! (:documents state) (:document_id p) (:document_version p)))
                             (update state :accounting accounting/add ctx p))
       "meeting.create" (do (when (:document_id p) (docs/version! (:documents state) (:document_id p) (:document_version p)))
@@ -74,6 +77,9 @@
                          (cond-> (assoc state :assets assets) event
                            (update :outbox conj {:id (:id ctx) :event event :status "mock_recorded" :mode "mock" :generation (:generation state)})))
       "asset.failure" (update state :assets assets/record-failure ctx p)
+      "asset.check" (update state :assets assets/record-check ctx p)
+      "contract.save" (do (docs/version! (:documents state) (:document_id p) (:document_version p))
+                           (update state :assets assets/save-contract ctx p))
       "asset.registry.mock-refresh" (let [{:keys [assets event]} (assets/refresh-registry-mock (:assets state) ctx p)]
                                       (cond-> (assoc state :assets assets) event
                                         (update :outbox conj {:id (:id ctx) :event event :status "mock_recorded"
