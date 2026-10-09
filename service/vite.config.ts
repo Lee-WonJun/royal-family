@@ -4,6 +4,16 @@ import hostingConfig from "./.openai/hosting.json";
 import { readExecutionProfile } from "./scripts/execution-profile.mjs";
 import { sites } from "./build/sites-vite-plugin";
 import { connectorPreview } from "./build/connector-preview-plugin.mjs";
+import { readFileSync } from "node:fs";
+
+function localDeveloperCode(): Record<string, string> {
+  // Read only for local serve. Build output must never contain this value.
+  try {
+    const file = readFileSync(new URL("../vaults/developer/.env", import.meta.url), "utf8");
+    const value = file.match(/^AI_UNLOCK_CODE\s*=\s*([^\r\n]+)$/m)?.[1]?.trim().replace(/^['"]|['"]$/g, "");
+    return value ? { AI_UNLOCK_CODE: value } : {};
+  } catch { return {}; }
+}
 
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   "00000000-0000-4000-8000-000000000000";
@@ -69,6 +79,7 @@ export default defineConfig(async ({ command }) => {
         inspectorPort: false,
         config: {
           ...localBindingConfig,
+          ...(command === "serve" ? { vars: localDeveloperCode() } : {}),
           ...(command === "serve"
             ? {
                 services: [

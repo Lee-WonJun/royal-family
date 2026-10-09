@@ -1,0 +1,12 @@
+[
+  {"id":"m02","name":"이정호","role":"총무","scenario":"총회 준비 · 문서 작성 · 종원 안내","page":"home"},
+  {"id":"m04","name":"이영수","role":"회장","scenario":"운영 현황 · 재산·결산 확인","page":"home"},
+  {"id":"m03","name":"이미경","role":"검토자","scenario":"회의록 검토 · 근거 대조","page":"records"},
+  {"id":"m09","name":"이서연","role":"종원","scenario":"안내 확인 · 동의·의견 기록","page":"consent"},
+  {"id":"m01","name":"이상훈","role":"종원","scenario":"토지 자료 · 법률 근거 확인","page":"assets"},
+  {"id":"m06","name":"이태식","role":"전임 총무","scenario":"기존 자료 등록 · 인수인계 준비","page":"records"},
+  {"id":"m05","name":"이순자","role":"종원","scenario":"전화 안내 · 문서 읽기·인쇄","page":"records"},
+  {"id":"m08","name":"이민재","role":"종원","scenario":"미응답 확인 · 연락 상태 점검","page":"members"},
+  {"id":"m07","name":"이은지","role":"종원","scenario":"명부·가계 관계 · 가입 상태 확인","page":"members"},
+  {"id":"m10","name":"이도윤","role":"도입 지원","scenario":"모바일 탐색 · 시연 설정 확인","page":"home"}
+]

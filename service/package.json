@@ -15,7 +15,8 @@
     "cljs:build": "shadow-cljs release ui domain",
     "prebuild": "npm run cljs:build",
     "test:unit": "node scripts/unit-tests.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:access": "node --test test/access.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

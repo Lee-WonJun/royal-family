@@ -24,7 +24,7 @@
 (defn update-member [org ctx p]
   (let [m (member! org (:id p))]
     (c/version! m (:expected_version p))
-    (c/ensure! (contains? #{"회장" "총무" "검토자" "종원"} (or (:role p) (:role m))) :invalid_input "직책을 확인해 주세요.")
+    (c/ensure! (contains? #{"회장" "총무" "전임 총무" "검토자" "종원"} (or (:role p) (:role m))) :invalid_input "직책을 확인해 주세요.")
     (update org :members c/replace-item
             (-> m (merge (select-keys p [:role :contact_state :outreach])) (update :version inc)))))
 (defn add-relation [org ctx p]

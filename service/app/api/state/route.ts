@@ -1,5 +1,9 @@
 import { readState, publicState, json, errorResponse } from "../store";
-export async function GET() {
-  try { return json({ ok: true, state: publicState(await readState()), capabilities: { live: false, external_calls: "blocked" } }); }
+import { demoPersona, personas, accessStatus } from "../access";
+export async function GET(request: Request) {
+  try {
+    const state = await readState();
+    return json({ ok: true, state: publicState(state), personas, session: demoPersona(request), access: await accessStatus(request, state), capabilities: { live: false, external_calls: "blocked" } });
+  }
   catch (e) { return errorResponse(e); }
 }

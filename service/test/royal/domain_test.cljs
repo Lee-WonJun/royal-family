@@ -100,3 +100,10 @@
         s2 (apply! s "document.review" {:id "doc01" :expected_version 1 :action "confirm"} "confirm")]
     (is (= "internally_confirmed" (:status (docs/latest (docs/record! (:documents s2) "doc01")))))
     (is (= :invalid_input (code #(apply! s2 "document.review" {:id "doc01" :expected_version 1 :action "resolve" :note "다른 메모"} "again"))))))
+
+(deftest outreach-keeps-office-and-permission
+  (doseq [member seed/members]
+    (let [org (:organization (seed/initial-state 1))
+          next (org/update-member org ctx {:id (:id member) :expected_version 1 :outreach "전화 안내 완료"})
+          changed (org/member! next (:id member))]
+      (is (= (select-keys member [:id :role :access]) (select-keys changed [:id :role :access]))))))

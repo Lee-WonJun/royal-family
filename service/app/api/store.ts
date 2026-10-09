@@ -17,7 +17,18 @@ function db() {
 export async function readState(): Promise<State> {
   const connection = db();
   const existing = await connection.prepare("SELECT body FROM workspaces WHERE id = ?").bind(workspaceId).first<{body: string}>();
-  if (existing) return JSON.parse(existing.body);
+  if (existing) {
+    const state = JSON.parse(existing.body);
+    const seed = initialState(state.generation);
+    // Refresh only an untouched initial fixture; never replace saved demo work.
+    if (state.revision === 0 && state.fixture_version !== seed.fixture_version) {
+      await connection.prepare("UPDATE workspaces SET body = ? WHERE id = ? AND revision = 0 AND generation = ? AND body = ?")
+        .bind(JSON.stringify(seed), workspaceId, state.generation, existing.body).run();
+      const refreshed = await connection.prepare("SELECT body FROM workspaces WHERE id = ?").bind(workspaceId).first<{body: string}>();
+      return JSON.parse(refreshed!.body);
+    }
+    return state;
+  }
   const seed = initialState(1);
   await connection.prepare("INSERT OR IGNORE INTO workspaces (id, revision, generation, body) VALUES (?, ?, ?, ?)")
     .bind(workspaceId, 0, 1, JSON.stringify(seed)).run();

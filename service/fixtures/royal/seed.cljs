@@ -9,12 +9,12 @@
           {:id id :clan_id "demo_a" :name name :role role :access access :joined joined
            :outreach outreach :contact_state (if joined "확인" "미확인") :generation generation
            :lineage lineage :version 1 :is_demo true})
-        [["m01" "이상훈" "회장" "관리" true "안내 완료" 24 "시연 1계통"]
+        [["m01" "이상훈" "종원" "열람" true "안내 완료" 24 "시연 1계통"]
          ["m02" "이정호" "총무" "관리" true "안내 완료" 24 "시연 2계통"]
          ["m03" "이미경" "검토자" "검토" true "안내 완료" nil nil]
-         ["m04" "이영수" "종원" "열람" false "전화 안내 대기" nil nil]
+         ["m04" "이영수" "회장" "관리" false "전화 안내 대기" nil nil]
          ["m05" "이순자" "종원" "열람" false "전화 안내 대기" 23 "시연 1계통"]
-         ["m06" "이태식" "종원" "열람" false "전화 안내 대기" 23 "시연 1계통"]
+         ["m06" "이태식" "전임 총무" "열람" false "전화 안내 대기" 23 "시연 1계통"]
          ["m07" "이은지" "종원" "열람" true "안내 완료" nil nil]
          ["m08" "이민재" "종원" "열람" true "응답 대기" 25 "시연 2계통"]
          ["m09" "이서연" "종원" "열람" true "응답 대기" 25 "시연 1계통"]
@@ -67,7 +67,7 @@
     :summary "대표권 흠결·준재심 요건 관련 판결. 선고일은 원문에서 확인."
     :url "https://www.law.go.kr/LSW/precInfoP.do?precSeq=618205"}])
 (defn initial-state [generation]
-  {:clan_id "demo_a" :generation generation :revision 0 :fixture_version "2026-10-09.1"
+  {:clan_id "demo_a" :generation generation :revision 0 :fixture_version "2026-10-09.2"
    :organization {:name "전주이씨 임영대군파 종중" :members members :relations relations}
    :documents {:records records}
    :meetings {:items [{:id "meeting01" :title "10월 정기총회" :date "2026-10-24T14:00" :place "종중 회관"
