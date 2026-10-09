@@ -144,7 +144,7 @@
                                      (when (= token @epoch)
                                        (apply-state (:state r) token)
                                        (case (get-in r [:job :status])
-                                         "completed" (notify {:text "AI 결과가 준비됐습니다. 검토 후 문서에 반영해 주세요."
+                                         "completed" (notify {:text "AI 결과가 준비됐습니다. 내용을 확인해 주세요."
                                                               :retry #(navigate :records) :retry-label "기록 열기"})
                                          "failed" (notify {:text (get-in r [:job :error :message]) :error true}) nil)) true))
                             (.catch (fn [e] (when (= token @epoch) (notify {:text (str (.-message e) " AI 작업 기록에서 상태를 확인해 주세요.") :error true})) false))

@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { AppError, readState, publicState, runQuery, runInternal, type State } from '../store';
 import { requireAiGrant } from '../access';
 import { createOpenAI, AiProviderError } from '../../../connectors/openai/client.mjs';
-import { aiFeatures, promptVersion, runWorkflow } from '../../../connectors/openai/workflows.mjs';
+import { aiFeatures, runWorkflow } from '../../../connectors/openai/workflows.mjs';
+import { mockResult, promptVersionFor } from '../../../connectors/openai/policy.mjs';
 
 const reference = z.object({ document_id: z.string().min(1).max(200), version: z.number().int().positive() }).strict();
 const startSchema = z.object({ feature: z.enum(['stt', 'extract', 'search', 'draft', 'legal', 'recommend', 'decide']),
@@ -36,7 +37,9 @@ export async function startJob(request: Request, raw: unknown) {
   const candidates = p.feature === 'recommend' ? runQuery(state, { query: 'recommend_experts', ...p }).candidates : [];
   const input = { title: p.title || '검토 자료', question: p.question || '',
     documents, candidates, file_kind: documents[0].file_name?.split('.').pop() || 'text',
+    ...(p.feature === 'recommend' ? { criteria: { profession: p.profession, region: p.region || '', method: p.method || '', budget: p.budget ?? null } } : {}),
     ...(p.feature === 'legal' ? { official_sources: runQuery(state, { query: 'check_legal_basis' }).sources } : {}) };
+  const promptVersion = promptVersionFor(p.feature);
   const fingerprint = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify([p.feature, mode, promptVersion, input])))))
     .map(x => x.toString(16).padStart(2, '0')).join('');
   const cached = state.jobs.find((job: any) => job.status === 'completed' && job.fingerprint === fingerprint && job.dataset_generation === state.generation);
@@ -46,20 +49,6 @@ export async function startJob(request: Request, raw: unknown) {
   const result = await runInternal('ai.start', { feature: p.feature, evidence: p.evidence, input: storedInput, request: requestInput, prompt_version: promptVersion, fingerprint },
     state.generation, p.idempotency_key);
   return { ...result, job: result.state.jobs.find((job: any) => job.id === result.object_id), reused: false };
-}
-
-function mockResult(job: any) {
-  const docs = job.input.documents;
-  const refs = docs.map((d: any) => ({ document_id: d.document_id, version: d.version, location: '시연 원문', quote: d.body.slice(0, 100) }));
-  const result: any = { title: job.input.title || '예시 검토 자료', body: '', unconfirmed: ['예시 결과입니다. 원문을 확인한 뒤 검토해 주세요.'],
-    evidence: refs, fields: [], candidate_explanations: [] };
-  if (job.feature === 'decide') return { ...result, body: '자료 보완', next_action: 'request_information', confidence: null };
-  if (job.feature === 'stt') return { ...result, body: '전사 예시\n\n총회 준비 자료를 확인하고 견적 금액은 원본과 대조합니다.',
-    segments: [{ start: 0, end: 5, text: '총회 준비 자료를 확인하고 견적 금액은 원본과 대조합니다.' }], duration: 5 };
-  if (job.feature === 'recommend') return { ...result, body: '조건에 맞는 가상 후보의 상담 준비 사항입니다.',
-    candidate_explanations: job.input.candidates.map((x: any) => ({ expert_id: x.id, reason: `${x.region} · ${x.methods.join('·')}`, unconfirmed: ['상담 가능 여부 확인'] })) };
-  result.body = `${result.title}\n\n${job.input.question || '선택한 자료를 바탕으로 확인할 사항을 정리합니다.'}\n\n근거 자료\n${docs.map((d: any) => `${d.title} v${d.version}\n${d.body.slice(0, 1800)}`).join('\n\n')}\n\n확인할 항목\n인명·금액·일정은 담당자가 원문과 대조합니다.`;
-  return result;
 }
 
 export async function runJob(request: Request, id: string, generation: number) {

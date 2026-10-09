@@ -8,7 +8,7 @@
                              (or (str/blank? (:method p)) (some #{(:method p)} (:methods x)))))
         candidates (filter matches (:experts legal))
         within? #(or (nil? (:budget p)) (and (number? (:fee %)) (<= (:fee %) (:budget p))))]
-    {:candidates (vec (take 3 (sort-by :id (filter within? candidates))))
+    {:candidates (vec (sort-by :id (filter within? candidates)))
      :needs_confirmation (vec (filter #(and (:budget p) (nil? (:fee %))) candidates)) :is_demo true}))
 (defn preparation [legal ctx p]
   (c/ensure! (contains? #{"종중 운영 정비" "부동산등기용 등록" "토지 등기 준비" "법인 설립 상담"} (:task p)) :invalid_input "준비할 업무를 선택해 주세요.")

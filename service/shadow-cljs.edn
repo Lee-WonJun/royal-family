@@ -12,6 +12,7 @@
            :modules {:main {:exports {initialState royal.domain/initial-state-js
                                     execute royal.domain/execute-js
                                     query royal.domain/query-js
+                                    aiPolicy royal.ai-policy/invoke-js
                                     parcelFromKgeop royal.parcels/from-kgeop-js}}}}
   :test {:target :node-test
          :output-to "target/tests.cjs"

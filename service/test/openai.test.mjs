@@ -105,3 +105,30 @@ test('File Search indexes only selected versions and cleans its temporary resour
   assert.equal(requests[5].method, 'DELETE'); assert.equal(requests[6].method, 'DELETE');
   assert.deepEqual(client.cleanupPending, []);
 });
+
+test('expert matching chooses from the whole pool and explanation cannot add candidates', async () => {
+  const candidates = Array.from({ length: 6 }, (_, i) => ({ id: `expert${i+1}`, name: `시연 후보 ${i+1}`, specialties: ['부동산'], description: '가상 자료 검토' }));
+  const selected = { ...result, candidate_explanations: [{ expert_id: 'expert6', reason: '자료 분야', unconfirmed: ['실제 상담 여부'] }] };
+  const { client, requests } = fakeClient([
+    { body: { answers: [{ name: 'expert_match', type: 'choice', choice: 'candidate:expert6' }] } },
+    { body: { answers: [{ name: 'generation_model', type: 'choice', choice: 'gpt-6-luna' }] } },
+    { body: { status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(selected) }] }] } },
+  ]);
+  const output = await runWorkflow(client, 'recommend', { ...input, candidates });
+  assert.equal(requests[0].json.questions[0].choices.length, 8);
+  assert.equal(JSON.parse(requests[0].json.input).candidates.length, 6);
+  assert.equal(output.matching.expert_id, 'expert6');
+  assert.equal(JSON.parse(requests[2].json.input[0].content[0].text).candidates.length, 1);
+  assert.equal(JSON.parse(requests[2].json.input[0].content[0].text).matching, undefined);
+});
+
+test('no match and missing information stop before generation; unknown candidates fail', async () => {
+  for (const [choice, status] of [['no_suitable_candidate', 'no_suitable_candidate'], ['request_information', 'needs_information']]) {
+    const { client, requests } = fakeClient([{ body: { answers: [{ name: 'expert_match', type: 'choice', choice }] } }]);
+    const output = await runWorkflow(client, 'recommend', { ...input, candidates: [{ id: 'expert1', name: '가상 후보' }] });
+    assert.equal(output.matching.status, status); assert.equal(requests.length, 1); assert.deepEqual(output.candidate_explanations, []);
+  }
+  const { client, requests } = fakeClient([{ body: { answers: [{ name: 'expert_match', type: 'choice', choice: 'candidate:outside' }] } }]);
+  await assert.rejects(runWorkflow(client, 'recommend', { ...input, candidates: [{ id: 'expert1' }] }), { code: 'invalid_match' });
+  assert.equal(requests.length, 1);
+});

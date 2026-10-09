@@ -117,7 +117,19 @@ try {
       }
       if (feature === 'stt') await command('ai.apply', { id: done.job.id, document_id: audioId, expected_version: 1 });
       if (feature === 'decide') await command('ai.apply', { id: done.job.id }, 'invalid_input');
+      if (feature === 'recommend') {
+        assert.equal(done.job.result.matching.status, 'matched');
+        assert.equal(done.job.result.matching.expert_id, 'expert04');
+        assert.equal(done.job.result.matching.selected_by, 'mock_fixture');
+      }
       assert.equal((await request('/api/ai', input, { status: 200 })).data.reused, true);
+    }
+    for (const variant of [{ question: '예산 안의 후보 찾기', budget: 0, status: 'no_suitable_candidate' }, { question: '', status: 'needs_information' }]) {
+      const registered = (await request('/api/ai', { feature: 'recommend', title: '매칭 예외', question: variant.question,
+        profession: 'lawyer', ...(variant.budget === 0 ? { budget: 0 } : {}), evidence: [{ document_id: 'doc03', version: 1 }],
+        generation: state.generation, idempotency_key: randomUUID() })).data;
+      const done = (await request('/api/ai', { action: 'run', id: registered.object_id, generation: state.generation })).data;
+      assert.equal(done.job.result.matching.status, variant.status); assert.deepEqual(done.job.calls, []);
     }
     const queued = (await request('/api/ai', { feature: 'draft', title: '리셋 이전 작업', question: '지연 작업 차단 확인', evidence: [{ document_id: 'doc03', version: 1 }], generation: state.generation, idempotency_key: randomUUID() })).data;
     queuedId = queued.object_id;

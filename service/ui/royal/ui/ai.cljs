@@ -2,9 +2,9 @@
                          [royal.ui.components :as c :refer [button badge field val-of latest find-id]]))
 
 (def features [["draft" "문서 초안"] ["extract" "본문·필드 추출"] ["stt" "음성 전사"]
-               ["search" "근거 검색"] ["legal" "문제 검토"] ["recommend" "후보 설명"] ["decide" "다음 작업 제안"]])
+               ["search" "근거 검색"] ["legal" "문제 검토"] ["recommend" "전문가 매칭"] ["decide" "다음 작업 제안"]])
 (def phases {"queued" "대기 중" "routing" "모델 선택 중" "processing" "처리 중" "indexing" "자료 색인 중"
-             "searching" "근거 검색 중" "completed" "검토 전" "failed" "실패" "cancelled" "사용 중지"})
+             "searching" "근거 검색 중" "matching" "후보 비교 중" "completed" "검토 전" "failed" "실패" "cancelled" "사용 중지"})
 (defn active? [job] (contains? #{"queued" "running"} (:status job)))
 (defn document-refs [data]
   (let [records (get-in data [:documents :records])
@@ -21,7 +21,8 @@
              (when (active? job) ($ c/spinner))
              ($ :strong (get (into {} features) (:feature job) (:feature job)))
              ($ :span {:class "muted small"} (get phases (:phase job) (:status job))))
-          ($ badge {:tone (if (= mode "live") "blue" "")} (if (= mode "live") "실제 호출" "예시")))
+          ($ badge {:tone (if (= mode "live") "blue" "")}
+             (if (= mode "live") (if (and (= "completed" (:status job)) (empty? (:calls job))) "조건 확인" "실제 호출") "예시")))
        ($ :div {:class "ai-job-meta muted small"}
           (when (:model job) ($ :span (:model job)))
           (when (:router_model (:routing job)) ($ :span "Luna Decisions 선택"))
@@ -32,6 +33,11 @@
             (when result
               ($ :<>
                  ($ :h4 (:title result)) ($ :p {:class "ai-result-text"} (:body result))
+                 (when-let [matching (:matching result)]
+                   ($ :div {:class "ai-job-meta"}
+                      ($ badge (get {"matched" "후보 선택" "no_suitable_candidate" "적합한 후보 없음" "needs_information" "정보 보완 필요"} (:status matching)))
+                      (when (:expert_name matching) ($ :strong (str (:expert_name matching) " · 가상 후보")))
+                      ($ :span {:class "muted small"} (str "조건 충족 " (:candidate_count matching) "명"))))
                  (when (:next_action result) ($ badge (get {"draft" "초안 준비" "request_information" "자료 보완" "expert_review" "전문가 검토"} (:next_action result))))
                  (when (seq (:fields result))
                    ($ :dl {:class "definition-list"}

@@ -2,9 +2,12 @@
                              [royal.ui.components :as c :refer [icon button badge tabs field val-of won latest find-id]]
                              [royal.ui.queries :as queries] [royal.ui.ai :as ai]))
 
-(defui experts [{:keys [profession request-query open-dialog data busy start-ai] :as props}]
+(defui experts [{:keys [profession request-query open-dialog data busy start-ai ai-drafts set-ai-drafts] :as props}]
   (let [[region set-region] (uix/use-state "") [method set-method] (uix/use-state "")
         [budget set-budget] (uix/use-state "")
+        draft-key (str "experts:" profession)
+        question (get-in ai-drafts [draft-key :question] "")
+        set-question #(set-ai-drafts (fn [all] (assoc-in all [draft-key :question] %)))
         {:keys [loading error run] results :data} (queries/use-query request-query
                                                   {:query "recommend_experts" :profession profession :region region :method method :remote false
                                                    :budget (when-not (str/blank? budget) (js/Number budget))})]
@@ -20,6 +23,7 @@
        ($ c/query-status {:loading loading :error error :retry run :has-data (some? results) :label "후보 불러오는 중"})
        (when results
          ($ :<>
+            ($ :p {:class "muted small"} (str "조건 충족 " (count (:candidates results)) "명"))
             ($ :div {:class "expert-grid" :aria-busy loading}
                (for [expert (:candidates results)]
                  ($ :article {:class "expert-card" :key (:id expert)}
@@ -31,11 +35,13 @@
                        ($ button {:disabled (or loading (some? error)) :on-click #(open-dialog :consultation expert)} "상담 준비")))))
             (when (and (not loading) (not error) (empty? (:candidates results))) ($ c/empty-state {:title "조건에 맞는 후보가 없습니다." :text "지역·방식·예산을 조정해 주세요."}))
             (when (seq (:needs_confirmation results)) ($ :p {:class "muted small"} (str "비용 미확인: " (str/join ", " (map :name (:needs_confirmation results))) " · 예산 조건에서 제외")))
+            ($ field {:label "상담할 내용"} ($ :textarea {:rows 3 :value question :max-length 8000 :on-change #(set-question (val-of %))
+                                                           :placeholder "예: 토지 자료 변경과 총회 기록을 함께 검토하고 싶습니다."}))
             ($ :div {:class "dialog-actions"}
-               ($ button {:disabled (or busy loading error (empty? (:candidates results)))
-                          :on-click #(start-ai {:feature "recommend" :title "후보 추천 근거" :question "선택 조건과 자료를 바탕으로 후보별 상담 준비 사항을 설명해 주세요."
+               ($ button {:disabled (or busy loading error)
+                          :on-click #(start-ai {:feature "recommend" :title "전문가 매칭" :question question
                                                 :evidence (ai/document-refs data) :profession profession :region region :method method
-                                                :budget (when-not (str/blank? budget) (js/Number budget))})} "AI 추천 근거"))
+                                                :budget (when-not (str/blank? budget) (js/Number budget))})} "AI 후보 매칭"))
             ($ ai/job-list (assoc props :filter-features #{"recommend"})))))))
 
 (defui preparation-page [{:keys [data busy command open-dialog request-query] :as props}]

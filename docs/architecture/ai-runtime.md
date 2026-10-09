@@ -2,6 +2,14 @@
 
 2026-10-09 구현 기준. 실제 API 검증 결과는 [구현 현황](../implementation-status.md)에 별도 기록한다.
 
+## 코드 경계
+
+프롬프트·기능별 지침·모델 허용 목록·라우팅 질문·다음 단계 정책·응답 근거/후보 검증·전사 결과 정리·mock 생성은 서버용 [royal.ai-policy](../../service/modules/royal/ai_policy.cljs)에 둔다. domain ESM 빌드의 공개 `aiPolicy` 함수로 호출하며 UI 빌드에서는 참조하지 않는다.
+
+[workflows.mjs](../../service/connectors/openai/workflows.mjs)는 이 정책을 호출해 HTTP 요청으로 직렬화하고 원격 파일·색인·오디오·Responses API를 처리한다. [policy.mjs](../../service/connectors/openai/policy.mjs)는 CLJS 결과를 JS 오류로 변환하는 연결부다. `jobs.ts`는 인증·데이터/파일 읽기·작업 실행과 저장을 조립한다. 업무 프롬프트나 mock 문구를 이곳에 다시 정의하지 않는다.
+
+2026-10-09 이관 전후 fake 요청 비교에서 생성 4종·Decisions의 프롬프트, 요청 본문, 결과가 동일했고 mock 7종 결과도 동일했다. 이미 통과한 실제 API 사례를 이 코드 이동 때문에 반복하지 않았다. 이후 사용자가 요청한 전문가 매칭은 별도 정책 변경이며 아래 matching-v4 계약을 따른다.
+
 ## 모델 선택
 
 사용자 결정에 따라 일반 생성 모델은 **Luna Decisions가 `gpt-6-luna`와 `gpt-6.1-sol` 중 선택**한다. Astra는 허용 목록에 없다. 단순 추출·요약·후보 설명·짧은 초안은 Luna를 기본으로 제안하고, 여러 자료의 복잡한 상충이나 긴 구조화 문서는 Sol을 선택할 수 있다. 단어 하나나 모델 출력만으로 권한·업무 상태를 바꾸지 않는다.
@@ -34,3 +42,14 @@
 작업에는 입력 버전, 실행 모드, 라우팅 결과, 선택 모델, endpoint, 요청·응답 ID, 처리 시간, 제공된 usage, 실패 코드가 남는다. 제공되지 않은 사용량을 측정값으로 만들지 않는다. 단위 테스트는 가짜 fetch·파일로 허용 모델, 실제 호출 차단, 오류, 근거·후보 범위, 색인 정리, 중복 실행, 리셋 경계를 확인한다.
 
 공식 계약: [Decisions](https://developers.openai.com/api/docs/guides/decisions), [GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna), [GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol), [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [File Search](https://developers.openai.com/api/docs/guides/tools-file-search), [Whisper 구간 정보](https://developers.openai.com/api/docs/guides/speech-to-text#timestamps).
+
+
+## 전문가 매칭
+
+2026-10-09 추가 사용자 결정. `royal.legal-support/recommend`가 직군·지역·상담 방식·예산·분야의 필수 조건을 검사하고 통과한 후보 전체를 반환한다. ID 정렬은 화면의 안정적인 나열일 뿐 추천 순위가 아니며 3명 제한을 두지 않는다. 예산이 있을 때 비용 미상 후보는 통과시키지 않는다.
+
+`royal.ai-policy`가 Luna Decisions의 `expert_match` 질문·선택지를 만든다. 후보마다 `candidate:<id>`가 있고 `no_suitable_candidate`·`request_information`을 별도로 허용한다. 문서·질문·후보 분야를 비교하며 외부 ID, 거절, 잘못된 응답을 실패로 기록한다. 후보가 0명이면 필수 조건 결과로 종료하며 실제 모델을 호출했다고 표시하지 않는다.
+
+후보 선택 시 CLJS가 선택 ID를 입력 집합과 대조한 뒤 해당 한 명만 설명 입력에 남긴다. 이어 Luna Decisions가 설명 모델을 Luna/Sol 중 고르고 Responses가 추천 이유·미확인 사항을 작성한다. 후보 없음·정보 보완 결과는 추가 생성 없이 종료한다. 이전 추천 결과를 재사용하지 않도록 `recommend`만 prompt version `matching-v4`로 바꾸며 다른 기능의 캐시 버전은 유지한다.
+
+mock은 예시 선택·빈 후보·정보 보완 결과를 반환하고 실제 매칭으로 표현하지 않는다. 실제 모델의 전체 후보 검토와 마지막 후보 선택, 허용 목록 검증, 추가 생성 차단은 fake 계약과 CLJS 검사로 검증한다.

@@ -204,3 +204,8 @@ Sites starter의 build integration을 유지하고 D1·R2와 `mcp` capability를
 사이트는 처음 소유자 제한으로 배포한다. 빌드와 배포가 성공해도 실제 OpenAI 호출·MCP 도구·ChatGPT 이벤트 수신을 검증한 것으로 간주하지 않는다. 모델 접근, 플러그인 설치, Work Cloud와 callback 보안 요구의 지원 여부는 최종 연결 검증에서 별도로 기록한다.
 
 CLJS ESM·Vinext Worker 빌드 호환성을 확인했다. 원격 API·ChatGPT 연결은 별도 검증 전이다. 구현 중에는 단위 테스트와 빌드·정적 검사로 경계를 확인하며 전체 업무의 E2E는 [최종 게이트](testing.md#e2e-gate)를 통과한 뒤에만 실행한다. Sites 저장·identity·MCP 처리 방식은 구현 당시 설치된 Sites 스킬과 [공식 Sites 안내](https://learn.chatgpt.com/docs/sites)를 함께 확인한다.
+
+
+### 전문가 매칭의 선택 경계
+
+필수 조건을 통과한 후보 전체를 CLJS가 제공한다. ID 기준 상위 3명 제한을 두지 않는다. Luna Decisions의 후보 선택·후보 없음·정보 보완 응답을 CLJS가 검증하고, 선택한 후보 한 명의 설명만 Responses에 요청한다. 실제 제휴나 수임으로 해석하지 않는다. 상세 계약과 버전은 [AI 실행](ai-runtime.md#전문가-매칭)을 따른다.
