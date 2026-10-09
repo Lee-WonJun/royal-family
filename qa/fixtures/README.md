@@ -1,6 +1,6 @@
 # 시연 seed
 
-실행 seed는 [service/fixtures/royal/seed.cljs](../../service/fixtures/royal/seed.cljs)에 있다. 버전은 `2026-10-09.1`이다.
+실행 seed는 [service/fixtures/royal/seed.cljs](../../service/fixtures/royal/seed.cljs)에 있다. 버전은 `2026-10-09.2`다. 시작 화면의 계정·권장 시나리오는 [personas.json](../../service/fixtures/personas.json)에 있으며 명부와 같은 ID를 사용한다.
 
 - 종원 10명은 QA 페르소나의 이름을 쓴 가상 명부다. 가입·연락·직책 상태는 시연 설정이며 실제 계정이나 연락 이력이 아니다.
 - 가계 연결·세대·계통은 계층 탐색을 위한 독립적인 가상 설정이다. 페르소나의 나이·성명에서 추정한 관계가 아니다.

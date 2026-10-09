@@ -1,6 +1,6 @@
 # 명문가 서비스
 
-CLJS·UIx 화면과 업무 규칙을 Vinext·React·Cloudflare Workers에 연결한 1차 시연 앱이다. D1에 업무 상태, R2에 원본을 저장한다. 앱 로그인 없이 고정 시연 관리자로 시작한다.
+CLJS·UIx 화면과 업무 규칙을 Vinext·React·Cloudflare Workers에 연결한 1차 시연 앱이다. D1에 업무 상태, R2에 원본을 저장한다. 가상 계정과 권장 시나리오를 선택해 시작하며 모든 계정은 같은 시연 관리 기능을 사용한다.
 
 ## 실행
 
@@ -25,6 +25,7 @@ node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1
 
 ```powershell
 npm run test:unit
+npm run test:access
 npm run typecheck
 npm run build
 ```
@@ -47,6 +48,8 @@ D1의 한 종중 aggregate를 revision과 generation으로 비교 후 갱신한�
 ## 현재 연결 상태
 
 모든 외부 기능은 mock 또는 미연결이다. 실제 호출 토글은 비활성화되어 있으며 OpenAI 실패를 mock 성공으로 바꾸는 경로는 없다. `예시 초안 만들기`는 고정 생성 규칙을 사용한다. 녹음 전사·File Search·Decisions·실제 ChatGPT Events는 아직 구현하지 않았다.
+
+실제 호출 ON은 개발자 코드 검증을 먼저 요구한다. 로컬 코드는 저장소 루트 `vaults/developer/.env`의 `AI_UNLOCK_CODE`이며 16자 이상을 사용한다. 로컬 개발 서버만 이 값을 읽고, 배포는 같은 이름의 Sites secret을 주입한다. 코드·해시는 클라이언트에 내려보내지 않는다. 검증 쿠키는 계정·데이터 세대에 묶이며 30분 후 만료한다. 계정 변경·전체 리셋·코드 교체 뒤에는 다시 확인해야 한다. 코드 확인과 실연동 준비 상태는 별도다.
 
 MCP endpoint는 `/mcp`다. 데이터 도구는 Sites가 전달한 인증 주체를 요구한다. Events capability는 광고하지 않는다. 도구 연결 성공과 사이트 배포 성공을 구분한다.
 
