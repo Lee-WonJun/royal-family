@@ -1,0 +1,57 @@
+{
+  "template": {
+    "path": "C:\\Users\\dldnj\\OneDrive\\문서\\Premium Cloud Widescreen Multicolored.pptx",
+    "sha256": "b8b4feda988b4e16ed9424d35efa57b4d9d1b5933ac102ade21be0da7399db26",
+    "phone_slide": 306,
+    "macbook_slide": 312,
+    "boundary": "원본 기기 이미지와 실제 앱 캡처를 별도 PPT 이미지로 겹쳐 배치. 프레임을 임의로 새로 그리지 않음."
+  },
+  "screenshots": {
+    "source": "http://127.0.0.1:5173/",
+    "captured": "2026-10-09",
+    "mode": "실제 구현 UI, 가상 시연 계정과 예시 데이터",
+    "boundary": "화면 탐색과 캡처만 수행. 저장·응답·외부 AI 호출 없음. 화면 캡처는 전체 기능 E2E 통과 증명이 아님."
+  },
+  "files": [
+    {
+      "file": "template-macbook.png",
+      "sha256": "5f87f37dcc087dc2e48230f8cd661acfc79705d5cea68f62761fe8f39a27dc9b"
+    },
+    {
+      "file": "template-phone.png",
+      "sha256": "7a8491e7b4cbe6c4cce159f9671325e580715defcd4ab90393adb2fc67601de7"
+    },
+    {
+      "file": "ui-home.jpg",
+      "sha256": "e2eadeaed7cd7fe128962e8e5408afa7e2fc6c1c92124c7e5801a3e16a5b4eb0"
+    },
+    {
+      "file": "ui-preparation.jpg",
+      "sha256": "f00487328959810dffd893038be8120b2b05fabc7033ddbd875880579ae588d6"
+    },
+    {
+      "file": "ui-records-phone.jpg",
+      "sha256": "8bfc5f17664585ba123bab21d63911ca4a81817681c6bf3ba3a4d494f4a26cef"
+    },
+    {
+      "file": "ui-draft.jpg",
+      "sha256": "1ef5b20ce0155a3e4a274c5f77508f527fd56ecba556a16a8abd7e96b0816179"
+    },
+    {
+      "file": "ui-consent-phone.jpg",
+      "sha256": "c4076e5dee6afdfb92464be15c0109ebd99c302e1907dae4938e7ff268594097"
+    },
+    {
+      "file": "ui-accounting.jpg",
+      "sha256": "106426e92528f3c3d8cf94ba90f1575f51e9c53e2db5b03885f0b20b310fdd3f"
+    },
+    {
+      "file": "ui-legal.jpg",
+      "sha256": "56e72a1f80847a156e839ccc62ed1e3163c795a2282bb1b0afecaf7e02c11ae6"
+    },
+    {
+      "file": "accounts-1440.jpg",
+      "sha256": "ecfbfa50fcaad15e161d9b081b014bae67d2d6dc6ee91b33acfa85ff6c4b0022"
+    }
+  ]
+}

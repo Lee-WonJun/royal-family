@@ -1,0 +1,167 @@
+{
+  "as_of": "2026-10-09",
+  "basis": "프로젝트 파일과 당일 Codex 작업 기록을 대조한 발표용 스냅샷. 이번 PPT 작업에서 제품 테스트를 재실행하지 않음.",
+  "codex_work": {
+    "input_audio_duration": "6분 45초",
+    "clan_personas": 10,
+    "use_cases": 8,
+    "ui": "CLJS + UIx",
+    "domain": "CLJS modular monolith",
+    "http": "Vinext",
+    "runtime": "Cloudflare Workers",
+    "state": "D1",
+    "original_files": "R2",
+    "deployment": "2026-10-09 비공개 Sites 배포 기록 확인. 현재 서비스 동작의 재검증은 아님."
+  },
+  "legal_sources": {
+    "statutes": 22,
+    "selected_articles": 108,
+    "precedents": 25,
+    "status": "수집 완료, 서비스 색인 전"
+  },
+  "mcp": {
+    "total": 14,
+    "read": 9,
+    "prepare_or_write": 5,
+    "state": "도구 서버 구현. 실제 ChatGPT 도구 실행 미검증. Events 구독/서명/전달 미연결. 시연 outbox는 구현."
+  },
+  "ai": {
+    "current": "OpenAI 서버 어댑터와 AI 작업 상태 관리 코드 구현. 기능 기본 mock. 서버 키, 기능 토글, 개발자 코드 승인 조건으로 실제 호출 선택. 실제 API 성공 검증은 아직 확인하지 못함.",
+    "routing": "Luna Decisions가 gpt-6-luna 또는 gpt-6.1-sol 선택",
+    "implemented_endpoints": [
+      "/audio/transcriptions: whisper-1",
+      "/decisions: 모델 선택 및 다음 검토 단계",
+      "/responses: 구조화 출력",
+      "File Search: 선택한 문서 버전의 임시 색인"
+    ],
+    "human_review": "완료 결과를 담당자가 확인한 뒤 검토 문서로 반영",
+    "boundary": "현재 코드와 ai-runtime.md 기준. 오래된 implementation-status.md의 미연결 설명보다 현재 어댑터 코드를 우선. 전체 E2E 및 live 성공 여부와 분리."
+  },
+  "validation": {
+    "unit_tests": 29,
+    "assertions": 81,
+    "failures": 0,
+    "errors": 0,
+    "pbt_domain_properties": 12,
+    "pbt_cases_per_property": 100,
+    "seed": 20261009,
+    "security_tests_recorded": 4,
+    "independent_ui_review": "PASS: 읽기, 이동, 반응형 검수",
+    "full_e2e": "미실행",
+    "live_e2e": "미실행",
+    "unit_result_saved_at": "2026-10-09T13:32:38.538368+09:00"
+  },
+  "sessions": [
+    {
+      "id": "01a11e38-dba2-7b01-ac43-ebd2996ced79",
+      "evidence": "통화 STT, 문맥 보완, PRD, 가상 페르소나"
+    },
+    {
+      "id": "01a11e5a-004e-71a3-9594-99b23612beda",
+      "evidence": "CLJS 모듈 구조, 유즈케이스, PBT 설계"
+    },
+    {
+      "id": "01a11e8d-b7f1-7953-9e65-cae5077a12c6",
+      "evidence": "공식 법령과 실제 판례 원문 수집"
+    },
+    {
+      "id": "01a11e9a-f8e7-75d1-9d77-3ca3786a811b",
+      "evidence": "서비스 구현, 단위 검증, 비공개 배포"
+    },
+    {
+      "id": "01a11e9b-c9ef-72b3-803e-3baa249ed890",
+      "evidence": "별도 에이전트의 UI 검수"
+    },
+    {
+      "id": "01a11ecb-90f8-7ed2-a663-2a72c55be07a",
+      "evidence": "필지 경계 원문 확보, GeoJSON 변환"
+    }
+  ],
+  "sources": [
+    {
+      "path": "docs/implementation-status.md",
+      "sha256": "9426af49e14fec0eb4cfcae8b3203994cbf8ace09eebc2b0a2cb9187d3504a99"
+    },
+    {
+      "path": "docs/architecture/system-design.md",
+      "sha256": "efd4cc4ed577b141e142f5fedb1792ff8f6fb20a5d0aa005d1d993ff23fd5d06"
+    },
+    {
+      "path": "docs/architecture/testing.md",
+      "sha256": "674809da881a290e4bbd402271b2b5f69155dc032375b52741cdc13e7f6ff96a"
+    },
+    {
+      "path": "docs/architecture/mcp-and-skills.md",
+      "sha256": "e7dbacb488eab318968137ca61ab8174dcc06db1464b6f04c0c1bd8dd85ef202"
+    },
+    {
+      "path": "docs/architecture/parcel-map.md",
+      "sha256": "62092c5b41b47b8d0a439522aa80a6c240f36f073ece3f1be1341244a5efe7f3"
+    },
+    {
+      "path": "docs/prd/hackathon-prd.md",
+      "sha256": "af9ac15646716e8c8653625d1756624b23970dd7c3f3f203573e2b0195c17ca7"
+    },
+    {
+      "path": "qa/ui-acceptance-2026-10-09.md",
+      "sha256": "e22ea25d73b4b408cbe317ebec8d73c5199e30585c7435df78b4192a99f42ba2"
+    },
+    {
+      "path": "service/app/api/store.ts",
+      "sha256": "7640017e4952222e96f66164a467d8be6d875b14afc5cb87318a58a7a0397096"
+    },
+    {
+      "path": "service/app/api/access.ts",
+      "sha256": "69068563cf7f786fcc75a483b4641db9bcab951c9f78e6f3ddd0c394412aa652"
+    },
+    {
+      "path": "service/connectors/mcp/tools/catalog.ts",
+      "sha256": "07098ce8ea1df8b69f6036dbd67bcf582e9062487426ef9bed600e8ef5a96c31"
+    },
+    {
+      "path": "service/target/unit-results.txt",
+      "sha256": "ce9114ab89e3414006f4e5562ffa16193820ac8431db304d60d3b087b3553d32"
+    },
+    {
+      "path": "service/test/royal/domain_test.cljs",
+      "sha256": "b4c663ca7971b9315a4f8ee4c2d95185eb56a2dc7b856c26961b60e2b5fce959"
+    },
+    {
+      "path": "rawdata/Law/catalog.json",
+      "sha256": "92f952db34d6e0a601cd536544a9ed6f2508c9285ce0332c51fe9e48ba771356"
+    },
+    {
+      "path": "rawdata/land/4415011300200410001-kgeop.json",
+      "sha256": "cea244ea0e58edd0bd410cb3481be6860ee8427154aed3dc97700769ced55a4e"
+    },
+    {
+      "path": "qa/artifacts/home-1440.jpg",
+      "sha256": "6a7e494d4b62867722ff2ec575b11829b5cc4af6614970f845aebc6d71e3aff1"
+    },
+    {
+      "path": "qa/artifacts/accounts-1440.jpg",
+      "sha256": "ecfbfa50fcaad15e161d9b081b014bae67d2d6dc6ee91b33acfa85ff6c4b0022"
+    },
+    {
+      "path": "docs/architecture/ai-runtime.md",
+      "sha256": "1d3a5c0e9d9f666efebf548c24693d5e6bb9415c4b2a112f069a99def7a9a9c8"
+    },
+    {
+      "path": "service/connectors/openai/workflows.mjs",
+      "sha256": "614ffa8c1c8478c91d1a23e4d861fe223a7c46b5b4788605731c730cabeda990"
+    },
+    {
+      "path": "service/connectors/openai/client.mjs",
+      "sha256": "6454900ff4f66f9622ff292e155bc156dff4c7b609a53337014d6c3a89cd9565"
+    },
+    {
+      "path": "service/app/api/ai/route.ts",
+      "sha256": "1d1bfda1ac478aacc9dae1f656f6c30d4a0fce13dfa93f0ba9a5b0ca9b28b52e"
+    },
+    {
+      "path": "service/app/api/ai/jobs.ts",
+      "sha256": "86a09c3e7a705c31b97f0b25da1889013bb182741e00a06e8ea714ea20027dca"
+    }
+  ],
+  "as_of_time_kst": "2026-10-09T13:44:44.035759+09:00"
+}
