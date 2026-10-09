@@ -9,19 +9,20 @@ const BUNDLE=process.env.CODEX_ARTIFACT_RUNTIME||'C:/Users/dldnj/.cache/codex-ru
 const MODULES=path.join(BUNDLE,'node/node_modules'); process.env.RUNTIME_NODE_MODULES=MODULES;
 const req=createRequire(path.join(MODULES,'__royal-ir__.cjs'));
 const {Presentation,PresentationFile,FileBlob}=await import(pathToFileURL(req.resolve('@oai/artifact-tool')).href);
-const sharp=req('sharp'),{GlobalFonts}=req('@napi-rs/canvas');
+const sharp=req('sharp'),{GlobalFonts,createCanvas}=req('@napi-rs/canvas');
 GlobalFonts.registerFromPath('C:/Windows/Fonts/NotoSerifKR-VF.ttf','Noto Serif KR');
 for(const [f,n] of [['Pretendard-Regular.ttf','Pretendard'],['Pretendard-Bold.ttf','Pretendard'],['Pretendard-SemiBold.ttf','Pretendard SemiBold']])GlobalFonts.registerFromPath(path.join(ROOT,'ppt/assets/fonts',f),n);
 const SKILL='C:/Users/dldnj/.codex/plugins/cache/openai-primary-runtime/presentations/26.1007.11041/skills/presentations';
 const {finalizePresentation,applyPresentationChartFont}=await import(pathToFileURL(path.join(SKILL,'container_tools/artifact_tool_utils.mjs')).href);
-const PPT=path.join(ROOT,'ppt'),ASSETS=path.join(PPT,'assets'),BUILD=path.join(ROOT,'.codex/ppt-build-20261009-v11');
-const REV=process.env.PPT_REVISION||'v11_IR',FINAL=process.env.PPT_FINAL_PATH||path.join(PPT,`명문가_발표초안_${REV}.pptx`);
-const PREVIEW=process.env.PPT_PREVIEW_DIR||path.join(PPT,'preview-v11');
+const PPT=path.join(ROOT,'ppt'),ASSETS=path.join(PPT,'assets'),BUILD=path.join(ROOT,'.codex/ppt-build-20261009-v13');
+const REV=process.env.PPT_REVISION||'v13_IR',FINAL=process.env.PPT_FINAL_PATH||path.join(PPT,`명문가_발표초안_${REV}.pptx`);
+const PREVIEW=process.env.PPT_PREVIEW_DIR||path.join(PPT,'preview-v13');
 await fs.mkdir(BUILD,{recursive:true});await fs.mkdir(PREVIEW,{recursive:true});
 const market=JSON.parse(await fs.readFile(path.join(PPT,'data/market-estimate-v6.json'),'utf8'));
 const years=JSON.parse(await fs.readFile(path.join(PPT,'data/precedent-year-search-20261009.json'),'utf8'));
 const evidence=JSON.parse(await fs.readFile(path.join(PPT,'data/implementation-evidence-v7.json'),'utf8'));
 const parcel=JSON.parse(await fs.readFile(path.join(PPT,'data/parcel-source-v7.json'),'utf8'));
+const reviews=JSON.parse(await fs.readFile(path.join(PPT,'data/persona-reviews-v12.json'),'utf8'));
 const C={paper:'#F5F2E9',teal:'#183E35',navy:'#173F49',blue:'#567D89',sage:'#729690',muted:'#687568',rust:'#A85437',pale:'#DCE7E2',grid:'#D2DCD6',white:'#FFFFFF',light:'#BDCFCA'};
 const SANS='Pretendard',HEAD=SANS,NUM=SANS,SERIF='Noto Serif KR';
 const p=Presentation.create({slideSize:{width:960,height:540}}),copy=[],chartOwners=[],devicePlacements=[];
@@ -29,6 +30,18 @@ const src=s=>path.join(ROOT,s).replaceAll('\\','/');
 const PLAN=src('rawdata/PPTPlan/script.md'),IMPL=src('ppt/data/implementation-evidence-v7.json');
 const PRD=src('docs/prd/hackathon-prd.md'),ARCH=src('docs/architecture/system-design.md');
 const n=number=>number.toLocaleString('en-US');
+const reviewMeasure=createCanvas(1,1).getContext('2d');
+function reviewLines(value,width,size){
+ reviewMeasure.font=`${size}px Pretendard`;
+ const lines=[];let line='';
+ for(const word of value.split(' ')){
+  const candidate=line?line+' '+word:word;
+  if(line&&reviewMeasure.measureText(candidate).width>width){lines.push(line);line=word;}else line=candidate;
+ }
+ if(line)lines.push(line);
+ if(lines.length>3)throw Error('Review exceeds three lines');
+ return lines.join('\n');
+}
 function text(s,value,x,y,w,h,size=28,o={}){
  const q=s.shapes.add({geometry:'textbox',name:value.replaceAll('\n',' '),position:{left:x,top:y,width:w,height:h},fill:'none',line:{fill:'none',width:0}});
  q.text=value;q.text.style={typeface:o.font||(o.numeric?NUM:o.bold?HEAD:SANS),fontSize:size,bold:o.bold??(o.numeric&&size>=50),color:o.color||C.teal,alignment:o.align||'left',verticalAlignment:'top',wrap:'none',autoFit:'none',insets:0};
@@ -275,6 +288,21 @@ function chart(s,type,opts){const q=s.charts.add(type,opts);applyPresentationCha
  }
 }
 {
+ const average=reviews.reviews.reduce((sum,r)=>sum+Number(r.rating),0)/reviews.reviews.length;
+ const s=slide({sources:[src('ppt/data/persona-reviews-v12.json')],notes:'선정 페르소나별 평가다. 실제 고객 만족도 조사나 유료 고객 실적으로 해석하지 않는다. 평균은 제공된 6개 점수의 단순 평균이다.\n'+reviews.reviews.map(r=>`${r.name} · ${r.persona} · ★ ${r.rating}\n“${r.review}”`).join('\n\n')});
+ text(s,reviews.title,50,45,650,62,40,{bold:true});
+ text(s,'평균',733,65,51,27,17,{color:C.muted});
+ text(s,'★ '+average.toFixed(1),790,45,127,51,35,{bold:true,color:C.blue,align:'right'});
+ for(const [i,r]of reviews.reviews.entries()){
+  const x=52+(i%2)*438,y=126+Math.floor(i/2)*127;
+  shape(s,x,y,418,117,C.white,C.grid,0.7,'roundRect');
+  text(s,r.name,x+17,y+12,93,30,22,{bold:true});
+  text(s,r.display_role,x+107,y+17,201,25,15,{color:C.muted});
+  text(s,'★ '+r.rating,x+308,y+10,94,34,25,{bold:true,color:C.blue,align:'right'});
+  text(s,reviewLines('“'+r.review+'”',381,18.5),x+17,y+46,384,67,18.5);
+ }
+}
+{
  const s=slide({bg:C.navy,number:false,notes:'업무 기록을 바탕으로 확인할 일을 안내하는 Events 흐름을 소개한다.'});text(s,'One More',65,115,836,124,88,{numeric:true,color:C.paper});text(s,'Thing',62,251,839,133,103,{numeric:true,color:C.paper});
 }
 {
@@ -293,11 +321,11 @@ function chart(s,type,opts){const q=s.charts.add(type,opts);applyPresentationCha
  text(s,'우리 가문은',58,119,377,43,27);text(s,'명문가',54,181,442,126,91,{font:SERIF,bold:true});text(s,'종중 운영의 모든것',59,332,424,43,27);
 }
 
-if(p.slides.items.length!==29)throw Error('Unexpected slide count');
+if(p.slides.items.length!==30)throw Error('Unexpected slide count');
 for(const k of ['TAM','SAM','SOM']){const value=market[k].annual_subscription_revenue_won??market[k].annual_run_rate_won;if(market[k].clans*market.subscription_assumption.annual_fee_per_clan!==value)throw Error('Market arithmetic: '+k);}
-await fs.writeFile(path.join(BUILD,'copy-v11.json'),JSON.stringify(copy,null,2));
+await fs.writeFile(path.join(BUILD,'copy-v13.json'),JSON.stringify(copy,null,2));
 await fs.writeFile(path.join(BUILD,'device-placements.json'),JSON.stringify(devicePlacements,null,2));
-await fs.writeFile(path.join(BUILD,'authored-v11-proto.json'),JSON.stringify(p.toProto()));
+await fs.writeFile(path.join(BUILD,'authored-v13-proto.json'),JSON.stringify(p.toProto()));
 const candidate=path.join(BUILD,`candidate-${REV}.pptx`);
 await(await PresentationFile.exportPptx(p)).save(candidate);console.log('DRAFT_EXPORTED '+candidate);
 const result=await finalizePresentation({workspaceDir:ROOT,candidatePath:candidate,finalPath:FINAL,pythonExecutable:path.join(BUNDLE,'python/python.exe'),integrityValidatorPath:path.join(SKILL,'container_tools/inspect_presentation_package_integrity.py'),layoutValidatorPath:path.join(SKILL,'container_tools/inspect_presentation_layout_geometry.py'),layoutArgs:['--expected-slide-size-emu','9144000,5143500','--validate-heading-fit','--validate-bullet-geometry'],requiredNativeChartOwnerSlides:chartOwners,materializeLiteralChartWorkbooks:true,fontPolicy:{basis:'design',families:[SANS,SERIF]},verifyArtifactToolImport:true,receiptPath:path.join(BUILD,`validation-${REV}.json`)});
@@ -307,6 +335,6 @@ for(const [i,s]of deck.slides.items.entries()){
  await fs.writeFile(path.join(PREVIEW,`slide-${String(i+1).padStart(2,'0')}.png`),new Uint8Array(await(await deck.export({slide:s,format:'png',scale:1.333333})).arrayBuffer()));
  console.log('RENDERED '+(i+1));
 }
-await fs.writeFile(path.join(BUILD,'revision-v11-receipt.json'),JSON.stringify({final:FINAL,sha256:result.finalSha256,slides:29,nativeCharts:chartOwners,deviceMockupSlides:devicePlacements.map(d=>d.slide),devicePlacements,sourceDeck:src('ppt/명문가_발표초안_v10_IR.pptx'),sourceDeckSha256:createHash('sha256').update(await fs.readFile(path.join(PPT,'명문가_발표초안_v10_IR.pptx'))).digest('hex'),template:'C:/Users/dldnj/OneDrive/문서/Premium Cloud Widescreen Multicolored.pptx',templateDeviceSlides:[306,312],evidenceAsOf:evidence.as_of},null,2));
+await fs.writeFile(path.join(BUILD,'revision-v13-receipt.json'),JSON.stringify({final:FINAL,sha256:result.finalSha256,slides:30,nativeCharts:chartOwners,reviewSlide:27,deviceMockupSlides:devicePlacements.map(d=>d.slide),devicePlacements,sourceDeck:src('ppt/명문가_발표초안_v11_IR.pptx'),sourceDeckSha256:createHash('sha256').update(await fs.readFile(path.join(PPT,'명문가_발표초안_v11_IR.pptx'))).digest('hex'),template:'C:/Users/dldnj/OneDrive/문서/Premium Cloud Widescreen Multicolored.pptx',templateDeviceSlides:[306,312],evidenceAsOf:evidence.as_of},null,2));
 console.log('DONE '+FINAL);
 process.exit(0);
