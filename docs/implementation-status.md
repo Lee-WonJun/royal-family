@@ -41,3 +41,13 @@ MCP 서버는 Events capability를 광고하지 않는다. 설정의 실제 호�
 동시 수정은 충돌로 반환하며 자동 덮어쓰지 않는다. 리셋은 DB 상태·모드를 seed로 복원하고 이전 세대 쓰기·파일 접근을 차단한다. 이전 R2 객체의 물리적 정리는 후속이다. 시크릿·원자료는 리셋 대상에 포함되지 않는다.
 
 실행 명령은 [service/README.md](../service/README.md), 가상 데이터 구분은 [fixture 설명](../qa/fixtures/README.md)을 따른다. 비공개 사이트 배포와 실제 API·MCP·Events 연결 검증은 각각 별도 결과로 기록한다.
+
+## 배포 기록
+
+2026-10-09, [명문가 비공개 사이트](https://royal-family-demo.seeroe.chatgpt.site) 배포가 `succeeded`로 확인됐다. 소유자의 ChatGPT 로그인이 필요한 플랫폼 접근 화면을 유지한다. 그 안의 시연 계정 선택은 별도이며 실제 종원 인증이 아니다.
+
+- 구현 기준 GitHub commit: `c4b90bedeaa03fc28d4b9d391b6d4ba26535b35b`.
+- Sites source commit: `92744cdda539290e295484ca5536e93dd78238ce`.
+- 배포 ID: `appgdep_6ac8675b3e288191b0c88032bf5c9276`.
+- 서버 비밀값 revision 1 적용. `AI_UNLOCK_CODE`는 secret으로 등록됐으며 빌드·클라이언트에서 실제 코드 값이 발견되지 않았다.
+- MCP capability는 배포됐으나 ChatGPT 연결·도구 실행은 미검증이다. OpenAI·Events 실제 연결과 전체 E2E는 계속 미완료다.
