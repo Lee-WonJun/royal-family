@@ -1,0 +1,62 @@
+import { env } from "cloudflare:workers";
+import { execute, initialState, query } from "../../generated/domain/main.js";
+
+export type State = Record<string, any>;
+export class AppError extends Error {
+  constructor(public code: string, message: string, public status = 400) { super(message); }
+}
+export const workspaceId = "demo_a";
+export function context() {
+  return { clan_id: workspaceId, principal_id: "demo_admin", role: "admin",
+    now: new Date().toISOString(), id: crypto.randomUUID(), force_mock: true, readiness: {} };
+}
+function db() {
+  if (!env.DB) throw new AppError("storage_unavailable", "저장소에 연결할 수 없습니다.", 503);
+  return env.DB;
+}
+export async function readState(): Promise<State> {
+  const connection = db();
+  const existing = await connection.prepare("SELECT body FROM workspaces WHERE id = ?").bind(workspaceId).first<{body: string}>();
+  if (existing) return JSON.parse(existing.body);
+  const seed = initialState(1);
+  await connection.prepare("INSERT OR IGNORE INTO workspaces (id, revision, generation, body) VALUES (?, ?, ?, ?)")
+    .bind(workspaceId, 0, 1, JSON.stringify(seed)).run();
+  const row = await connection.prepare("SELECT body FROM workspaces WHERE id = ?").bind(workspaceId).first<{body: string}>();
+  if (!row) throw new AppError("storage_unavailable", "시연 데이터를 준비하지 못했습니다.", 503);
+  return JSON.parse(row.body);
+}
+export function unwrap(result: any) {
+  if (!result.ok) {
+    const code = result.error.code;
+    throw new AppError(code, result.error.message,
+      code === "forbidden" ? 403 : code === "not_found" ? 404 : ["version_conflict", "stale_generation"].includes(code) ? 409 : 400);
+  }
+  return result.value;
+}
+export function publicState(state: State) {
+  return unwrap(query(state, context(), { query: "snapshot" }));
+}
+export function runQuery(state: State, input: unknown) { return unwrap(query(state, context(), input)); }
+export async function runCommand(command: unknown): Promise<State> {
+  const state = await readState();
+  const result = unwrap(execute(state, context(), command));
+  if (result.duplicate) return publicState(state);
+  const next = result.state;
+  const saved = await db().prepare("UPDATE workspaces SET revision = ?, generation = ?, body = ? WHERE id = ? AND revision = ? AND generation = ?")
+    .bind(next.revision, next.generation, JSON.stringify(next), workspaceId, state.revision, state.generation).run();
+  if (saved.meta.changes !== 1) throw new AppError("version_conflict", "다른 변경이 먼저 저장되었습니다. 새로고침 후 다시 시도해 주세요.", 409);
+  return publicState(next);
+}
+export function requireSameOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  if (origin && origin !== new URL(request.url).origin) throw new AppError("forbidden", "허용되지 않은 요청입니다.", 403);
+  if (request.headers.get("sec-fetch-site") === "cross-site") throw new AppError("forbidden", "허용되지 않은 요청입니다.", 403);
+}
+export function json(value: unknown, status = 200) {
+  return Response.json(value, { status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
+}
+export function errorResponse(error: unknown) {
+  if (error instanceof SyntaxError) return json({ ok: false, error: { code: "invalid_input", message: "입력 형식을 확인해 주세요." } }, 400);
+  if (error instanceof AppError) return json({ ok: false, error: { code: error.code, message: error.message } }, error.status);
+  return json({ ok: false, error: { code: "storage_unavailable", message: "처리하지 못했습니다. 잠시 후 다시 시도해 주세요." } }, 503);
+}
