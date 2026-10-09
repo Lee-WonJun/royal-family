@@ -45,6 +45,7 @@ next-env.d.ts
 /outputs/
 /work/
 /generated/
+/public/maplibre-worker.mjs
 /target/
 /.shadow-cljs/
 *.tsbuildinfo

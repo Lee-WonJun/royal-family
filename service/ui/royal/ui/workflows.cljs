@@ -1,5 +1,6 @@
 (ns royal.ui.workflows
   (:require [uix.core :as uix :refer [defui $]] [clojure.string :as str]
+            [royal.ui.parcel-map :refer [parcel-map]] [royal.parcels :as parcels]
             [royal.ui.components :as c :refer [icon button badge status tabs field val-of won find-id latest]]))
 
 (defui home-page [{:keys [data navigate select-doc]}]
@@ -110,7 +111,7 @@
 (defui assets-page [{:keys [data busy command open-dialog navigate select-doc]}]
   (let [[tab set-tab] (uix/use-state :land)
         assets (get-in data [:assets :items]) a (first assets)
-        snapshots (get-in data [:assets :snapshots]) current (last snapshots)
+        snapshots (get-in data [:assets :snapshots]) current (last (filter #(= (:id a) (:asset_id %)) snapshots))
         txs (get-in data [:accounting :transactions])
         income (reduce + 0 (map :amount (filter #(= "income" (:direction %)) txs)))
         expense (reduce + 0 (map :amount (filter #(= "expense" (:direction %)) txs)))]
@@ -120,20 +121,16 @@
        (case tab
          :land ($ :section {:class "land-section"}
                   ($ :div {:class "section-toolbar"} ($ :h2 (:name a)) ($ button {:on-click #(open-dialog :asset-snapshot current)} "후속 자료 등록"))
-                  ($ :div {:class "asset-sheet"}
-                     ($ :div {:class "parcel-visual" :aria-hidden true}
-                        ($ :svg {:viewBox "0 0 440 220" :fill "none"}
-                           ($ :path {:d "M0 40 80 80 190 30 280 80 440 30M0 130 100 160 180 100 290 160 440 100M55 0 80 80 20 220M190 30l30 190M280 80l60 140" :stroke "#e5e7eb" :stroke-width 2})
-                           ($ :path {:d "m114 97 81-45 81 45-29 77-83-5Z" :fill "#e9edeb" :stroke "#94a198" :stroke-width 2})
-                           ($ :text {:x 196 :y 119 :text-anchor "middle" :fill "#526158" :font-size 16} "산 41-1"))
-                        ($ :span {:class "muted small"} "위치 참고도 · 경계 측량 자료 아님"))
+                  ($ :div {:class "asset-sheet parcel-sheet"}
+                     ($ parcel-map {:key (str (:id a) "-" (:generation data)) :asset a :generation (:generation data)})
                      ($ :dl {:class "definition-list"} ($ :dt "소재지") ($ :dd (:parcel a))
+                        ($ :dt "필지 번호") ($ :dd {:class "parcel-pnu"} (or (parcels/pnu-for a) "미등록"))
                         ($ :dt "소유자 표시") ($ :dd (:owner_name current))
                         ($ :dt "지목·면적") ($ :dd (str (:land_category current) " · " (.toLocaleString (:area_m2 current) "ko-KR") "㎡"))
-                        ($ :dt "자료 출처") ($ :dd "K-GeoP 공개 기준값")
+                        ($ :dt "자료 출처") ($ :dd ($ :a {:class "parcel-reference-link" :href "https://www.kgeop.go.kr/info/infoMap.do?initMode=L" :target "_blank" :rel "noreferrer"} "K-GeoP 공개 자료"))
                         ($ :dt "확인일") ($ :dd (subs (:last_checked_at a) 0 10))
                         ($ :dt "확인 상태") ($ :dd ($ status {:value (if (= "failed" (:check_status a)) "failed" "기준 자료")}))))
-                  ($ :p {:class "muted small source-note"} "공개 조회값을 복제한 시연 자료입니다. 소유권 판단은 등기·원문 확인이 필요합니다.")
+                  ($ :p {:class "muted small source-note"} "필지 경계는 K-GeoP 공개 좌표입니다. 소유자·면적 표시는 시연용 기준 자료이며 소유권 판단은 등기·원문 확인이 필요합니다.")
                   ($ :h2 {:class "section-gap"} "연결 계약")
                   (for [contract (get-in data [:assets :contracts])]
                     ($ :button {:key (:id contract) :class "task-row" :on-click #(do (select-doc (:document_id contract)) (navigate :records))}

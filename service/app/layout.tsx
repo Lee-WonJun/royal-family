@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "maplibre-gl/dist/maplibre-gl.css";
+import "./parcel-map.css";
 
 export const metadata: Metadata = {
   title: "명문가 | 종중 관리",
