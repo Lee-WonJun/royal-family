@@ -2,7 +2,7 @@
 
 작성일: 2026-10-09 · 상태: 시나리오 정의, 제품 검증 미실행
 
-기준은 [해커톤 PRD](../../docs/prd/hackathon-prd.md)다. UC-01–UC-08은 사용자 목표, SC-01–SC-27은 검증할 행동이다. 모든 SC의 실행 상태는 **미실행**이다. 단위 테스트는 구현 중, E2E는 [최종 게이트](../../docs/architecture/testing.md#e2e-gate) 이후에만 실행한다. 아래 기대 결과는 합격 기준이며 현재 동작을 설명한 것이 아니다.
+기준은 [해커톤 PRD](../../docs/prd/hackathon-prd.md)다. UC-01–UC-08은 사용자 목표, SC-01–SC-28은 검증할 행동이다. 모든 SC의 실행 상태는 **미실행**이다. 단위 테스트는 구현 중, E2E는 [최종 게이트](../../docs/architecture/testing.md#e2e-gate) 이후에만 실행한다. 아래 기대 결과는 합격 기준이며 현재 동작을 설명한 것이 아니다.
 
 단위·PBT·일반 E2E는 mock이 기본이다. 실제 OpenAI·ChatGPT가 필요한 기대 결과는 별도로 선택한 live 검증에만 적용한다. 일반 회귀·반응형·토글·리셋은 실제 API를 호출하지 않는다. [호출 모드와 재사용 원칙](../../docs/architecture/testing.md#modes)을 따른다.
 
@@ -37,7 +37,7 @@
 | --- | --- |
 | F-01 | [공개 토지 기준값](../../docs/prd/hackathon-prd.md#sources). 종중명·지번·14,154㎡·조회일·과거 이력. 읽기 전용 참고 자료. |
 | F-02 | F-01을 참고한 **시연 공간의 복제 기준 자료**와 가상 후속 자료. 양쪽 모두 `is_demo=true`. 후속 명의는 ‘시연용 변경 명의’로 표시한다. 실제 K-GeoP가 바뀐 것으로 꾸미지 않는다. 준비 필요. |
-| F-03 | 가상 `demo_a`의 고정 관리자와 10개 명부·역할·미가입 자료, 별도 `demo_b`의 접근 거부용 자료. 역할·연결 상태는 테스트 데이터이며 앱 로그인 기능이 아니다. 준비 필요. |
+| F-03 | 가상 `demo_a`의 고정 관리자와 10개 명부·역할·미가입 자료, 별도 `demo_b`의 접근 거부용 자료. 여러 세대·복수 부모·미연결 종원의 가상 관계를 별도로 명시한다. 페르소나의 나이·성씨로 관계를 추정하지 않는다. 역할·연결 상태는 테스트 데이터이며 앱 로그인 기능이 아니다. 준비 필요. |
 | F-04 | 가상 규약 v1/v2·설립 준비 항목·명부·대표자 자료. 미확정 항목 포함. 법정 표준 양식으로 표시하지 않음. 준비 필요. |
 | F-05 | 기존 회의록·사진·빠진 페이지·위임장·참석 명부·수정본. 동명이인·표기 차이·모호한 금액 포함. 준비 필요. |
 | F-06 | 사용 가능한 시연 음성과 사람이 검토한 전사 대조표. 현재 rawdata에는 음성 원본이 없으므로 준비 필요. |
@@ -344,12 +344,22 @@
 - 기대 결과: 한 번에 초기 업무 데이터와 모든 토글의 mock 기본값으로 돌아간다. 지연 결과가 자료·알림을 복구하지 않는다. 시크릿 저장소 쓰기는 0회이고 실제 vaults·원자료·다른 종중은 대상이 아니다. 구독 재설정 필요를 표시하며 실패 시 일부 초기화를 성공으로 보이지 않는다.
 - 연결/단계: RF-13·20·21 / PBT-05·12·13, 최종 mock E2E. 실제 외부 업무나 비용 취소는 검증 대상으로 삼지 않는다.
 
+<a id="sc-28"></a>
+### SC-28 종원 계층 탐색·정정·초기화
+
+- 역할: 이정호·이은지·이도윤.
+- 사전 조건: 로그인 없는 시연 관리자와 가상 명부·가계 관계가 있다. 실제 가족관계를 확인한 데이터가 아니며 외부 호출은 mock이다.
+- 입력: F-03·10, 여러 세대·복수 부모·미연결 종원, 관계 정정·자기 참조·순환·다른 종중 연결, 모바일·PC 화면.
+- 행동: 종원 계층 펼치기 → 상위·하위 종원과 상세 탐색 → 목록과 비교 → 관계 정정 → 잘못된 연결 시도 → 전체 리셋.
+- 기대 결과: 계층·목록이 같은 종원 ID를 사용하고 미확인 관계를 임의 연결하지 않는다. 잘못된 연결을 거부하고 정정 전후 이력이 남는다. 직책·권한·과거 회의 대상은 변하지 않는다. 좁은 화면에서도 탐색할 수 있고 리셋 후 초기 명부·관계가 함께 복원된다.
+- 연결/단계: RF-01·19·21·22 / PBT-03·13·14, 최종 mock E2E. 실제 API 호출은 0회다.
+
 <a id="traceability"></a>
 ## 요구사항–설계–시나리오 추적표
 
 | PRD | 설계 | 시나리오 |
 | --- | --- | --- |
-| [RF-01](../../docs/prd/hackathon-prd.md#rf-01) | [권한·계약](../../docs/architecture/system-design.md#contracts) | SC-01·07·08·13·14·20·26 |
+| [RF-01](../../docs/prd/hackathon-prd.md#rf-01) | [권한·계약](../../docs/architecture/system-design.md#contracts) | SC-01·07·08·13·14·20·26·28 |
 | [RF-02](../../docs/prd/hackathon-prd.md#rf-02) | [AI](../../docs/architecture/system-design.md#ai) | SC-03·04·05·11 |
 | [RF-03](../../docs/prd/hackathon-prd.md#rf-03) | [토지 자료](../../docs/architecture/system-design.md#asset-change) | SC-09·17·18 |
 | [RF-04](../../docs/prd/hackathon-prd.md#rf-04) | [저장·집계](../../docs/architecture/system-design.md#storage) | SC-09·11 |
@@ -367,8 +377,9 @@
 | [RF-16](../../docs/prd/hackathon-prd.md#rf-16) | [동의](../../docs/architecture/system-design.md#consent) | SC-14·15·25 |
 | [RF-17](../../docs/prd/hackathon-prd.md#rf-17) | [법률 근거](../../docs/architecture/system-design.md#legal) | SC-16·22 |
 | [RF-18](../../docs/prd/hackathon-prd.md#rf-18) | [점검·추천](../../docs/architecture/system-design.md#legal) | SC-22·23·24 |
-| [RF-19](../../docs/prd/hackathon-prd.md#rf-19) | [반응형](../../docs/architecture/system-design.md#responsive) | SC-25 |
+| [RF-19](../../docs/prd/hackathon-prd.md#rf-19) | [반응형](../../docs/architecture/system-design.md#responsive) | SC-25·28 |
 | [RF-20](../../docs/prd/hackathon-prd.md#rf-20) | [호출 설정](../../docs/architecture/system-design.md#settings) | SC-25·26·27 |
-| [RF-21](../../docs/prd/hackathon-prd.md#rf-21) | [리셋](../../docs/architecture/system-design.md#reset) | SC-27 |
+| [RF-21](../../docs/prd/hackathon-prd.md#rf-21) | [리셋](../../docs/architecture/system-design.md#reset) | SC-27·28 |
+| [RF-22](../../docs/prd/hackathon-prd.md#rf-22) | [종원 하이어리키](../../docs/architecture/system-design.md#member-hierarchy) | SC-28 |
 
 실행 기록에는 검증한 commit·fixture 버전·역할·시나리오 ID·단위/E2E 구분·결과·증거·미확인 항목을 남긴다. [테스트 결과 기록 규칙](../../docs/architecture/testing.md)을 따른다.

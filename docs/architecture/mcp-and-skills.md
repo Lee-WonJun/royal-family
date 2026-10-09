@@ -35,6 +35,7 @@ Sites 공개 여부와 플러그인 연결은 다른 상태다. 배포 후 생�
 | 도구 | 주요 입력 | 주요 출력 / 업무 효과 |
 | --- | --- | --- |
 | `get_clan_overview` | 종중 | 허용된 예정 회의·동의 요청·미검토 자료·확인 지연 요약. 읽기 |
+| `get_member_hierarchy` | 종중·기준 종원 ID·상위/하위 조회 범위 | 동일 종중의 종원 ID·부모–자녀 연결·세대·관계 확인 상태. 미연결 상태와 복수 경로를 보존하는 읽기 기능 |
 | `get_record` | 객체 종류·ID·선택 버전 | 권한 범위의 본문·버전·출처·근거. 읽기 |
 | `search_records` | 질문·검색 범위 | 문서·버전·원문 위치와 근거 답변, 근거 없음·상충 표시. 읽기 |
 | `prepare_establishment` | 준비 업무·보유 서류·미확정 정보 | 준비 건 ID·서류 초안·보완 질문. 초안 저장 |
@@ -138,7 +139,7 @@ D1에 구독 주체·범위·callback·필터·상태·만료·검증 시점·�
 
 | 예정 skill | 적용할 요청 | 호출 흐름과 종료 기준 |
 | --- | --- | --- |
-| `royal-family-records` | 기존 회의록·토지·규약·법률 근거를 찾고 설명 | `get_clan_overview` → `search_records`/`get_record`/`check_legal_basis`. 문서·버전·출처와 부족한 근거를 제시하면 완료 |
+| `royal-family-records` | 종원 계층·기존 회의록·토지·규약·법률 근거를 찾고 설명 | `get_clan_overview` → 필요한 `get_member_hierarchy`/`search_records`/`get_record`/`check_legal_basis`. 관계 확인 상태·문서·버전·출처와 부족한 근거를 제시하면 완료 |
 | `royal-family-preparation` | 설립 준비·총회·문서 초안·법무사 후보를 준비 | 보유 자료·요청 업무 확인 → `prepare_establishment` 또는 `prepare_meeting` → `draft_document`·`recommend_experts`. 초안·누락 항목·후보 근거를 보여주며 자동 승인·발송하지 않음 |
 | `royal-family-change-review` | 토지 변화·문제 점검·변호사 후보·상담 준비 | 구독 대상과 사용자 대응 지시 확인 → 이벤트 수신 → `get_asset_changes`·`get_record`·`check_issues` → 필요 시 후보 추천. 자료상 사실·질문·다음 작업을 설명하고 사용자 선택 후 상담 초안을 준비 |
 
