@@ -1,0 +1,592 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ko" xml:lang="ko">
+ <head></head>
+ <body>
+  <input type="hidden" id="lsNm" name="lsNm" value="부동산 실권리자명의 등기에 관한 법률" /> 
+  <input type="hidden" id="lsId" name="lsId" value="001178" /> 
+  <input type="hidden" id="lsiSeq" name="lsiSeq" value="215759" /> 
+  <input type="hidden" id="ancYd" name="ancYd" value="20200324" /> 
+  <input type="hidden" id="efYd" name="efYd" value="20200324" /> 
+  <input type="hidden" id="ancNo" name="ancNo" value="17091" /> 
+  <input type="hidden" id="lsBdyChrCls" name="lsBdyChrCls" value="010202" /> 
+  <input type="hidden" id="lumIsConOrdin" value="" /> 
+  <input type="hidden" id="nwYnValue" value="Y" /> 
+  <input type="hidden" id="hstLnkDpYn" value="0" /> 
+  <style>
+.byl_pop ul li {
+	padding: 7px;
+	margin-left: 10px;
+}
+</style> 
+  <script type="text/javascript">
+$(document).ready(function(){
+	customResizePop(); // 본문 리사이즈
+	initEDotXPress('\uBD80\uB3D9\uC0B0 \uC2E4\uAD8C\uB9AC\uC790\uBA85\uC758 \uB4F1\uAE30\uC5D0 \uAD00\uD55C \uBC95\uB960');
+});
+
+function customResizePop() {
+		// 본문 버튼 높이 만큼 제공한다. 13은 패딩값
+		var $contentHeight = $("#center").height() - ($('.body_top_area').height() + 13);
+		var $conTopHeight = $('#conTop').height() + 35;
+
+		var bdyValue = lsVO.bdyUpdValue.updateContentNm || 'lsBdy';
+		
+        //lsInfoP 가 열릴 때 본문은 무조건 조회 하기 때문에 조건문 밖에 위치 하도록 변경.
+		$('#viewwrapCenter').css('overflow-y', 'hidden');
+        $('#bodyContentTOP > #viewwrapCenter').height($contentHeight);
+        $('#conScroll').height($('#viewwrapCenter').height() - $conTopHeight);
+        
+        if (bdyValue == 'lsBdy') {
+			/* 본문에서는 법령명 고정 때문에 hidden 처리*/
+			$('#viewwrapCenter').css('overflow-y', 'hidden');
+			$('#bodyContentTOP > #viewwrapCenter').height($contentHeight);
+			if($('#viewwrapCenter2').height() != null || $('#viewwrapCenter2').height() == 0){
+				$('#bodyContentTOP > #viewwrapCenter2').height($contentHeight);
+				$('#conScroll').height($('#viewwrapCenter2').height() - $conTopHeight);
+				$('#viewwrapCenter2').css('overflow', 'hidden');
+			}
+			$('#bodyContent').css('width', 'inherit');
+		} else if (bdyValue == 'lsPtnThdCmp') {
+			lspttnThdCmpResize();
+		} else if (bdyValue == 'lumThdCmp') {
+			thdCmpNewScPResize();
+		} else if (bdyValue == 'lumThdCmpSc') {
+
+		} else if (bdyValue == 'thdCmpNew') {
+
+		} else if (bdyValue == 'lsOldAndNew') {				
+			// 신구법은 이전 이후 버튼 높이까지 마이너스 한다. 
+			$('#bodySideContent > #oldAndNewDiv').height(($contentHeight + $('#tmpWidth').height()-114));
+		} else if (bdyValue == 'lsRvsDocInfoR') {
+
+			$('#bodySideContent > #viewwrapCenter').height($contentHeight);
+			$('#conScroll').height($('#viewwrapCenter').height() - $conTopHeight);
+			$('#conTop').height($('.cont_top').height());
+			$('#rvsConScroll').height($('#viewwrapCenter').height() - $('#rvsConTop').height());
+			
+		} else {
+			$('#bodySideContent > #viewwrapCenter').height($contentHeight);
+		}
+}
+
+function fileLayer(temp){
+	var tempStr = $("#hwptext"+temp).attr("value");
+	if(tempStr.length > 32){
+ 		$("#hwptext"+temp).css("width", "80%").css("text-overflow", "ellipsis").css("overflow","hidden").css("white-space","nowrap");
+ 		$("#hwpxtext"+temp).css("width", "80%").css("text-overflow", "ellipsis").css("overflow","hidden").css("white-space","nowrap");
+ 		$("#pdftext"+temp).css("width", "80%").css("text-overflow", "ellipsis").css("overflow","hidden").css("white-space","nowrap");
+ 	}
+
+ 	$(".byl_pop").css("display","none");
+
+ 	//레이어높이값
+ 	var height = $("#fileSaveLayer"+temp).height();
+ 	//본문 제일 하단 위치값 
+	var pagePos = document.querySelector('#center');
+	pagePos = pagePos.getBoundingClientRect().bottom;
+	//레이어버튼위치값
+	var layPos =document.querySelector('#imgPos'+temp);
+	layPos = layPos.getBoundingClientRect().bottom;
+	var lay_pop = $('#fileSaveLayer'+temp);
+	var pos = $('#imgPos'+temp).position();
+	
+	if(pagePos > height+layPos){ //레이어가 잘리지 않을 때 
+		lay_pop.css('top', (pos.top)+25 + 'px');
+		lay_pop.css('left', '250px')
+	}else{ //레이어가 잘릴 때
+		lay_pop.css('top', ((pos.top)-height)+ 'px');
+		lay_pop.css('left', (pos.left)+25+'px');
+	}
+	document.getElementById("fileSaveLayer"+temp).style.display="block";
+}
+
+function copyToClipBoard(temp2){
+	var content = document.getElementById('textarea'+temp2);
+	content.select();
+	document.execCommand('copy');
+	alert("주소가 클립보드에 저장되었습니다.");
+	content.setSelectionRange(0,0);
+}
+
+function delLayer(temp){
+	document.getElementById("fileSaveLayer"+temp).style.display="none";
+}
+
+</script> 
+  <div id="contentBody" class="scr_ctrl"> 
+   <div id="sideCenter" class="cont_area"> 
+    <ul class="cont_icon"> 
+     <li><a><img alt="판" src="/LSW/images/button/btn_jostmdico.gif" />판례</a></li> 
+     <li><a><img alt="연" src="/LSW/images/button/btn_year3.gif" />연혁</a></li> 
+     <li><a><img alt="행" src="/LSW/images/button/btn_entrust3_2.gif" />위임행정규칙</a></li> 
+     <li><a><img alt="규" src="/LSW/images/button/btn_entrust4_2.gif" />규제</a></li> 
+     <li><a><img alt="한" src="/LSW/images/button/btn_oneviewIcon.gif" />한눈보기</a></li> 
+    </ul> 
+    <!-- 연혁법령 안내문구 --> 
+    <!-- 법령명 --> 
+    <div id="conTop" class="cont_top"> 
+     <a id="top"></a> 
+     <!-- 국민신문고 연결배너 출력 --> 
+     <h2> 부동산 실권리자명의 등기에 관한 법률 <span>( 약칭: 부동산실명법 )</span> </h2> 
+     <div class="ct_sub"> 
+      <span>[시행 2020. 3. 24.] [법률 제17091호, 2020. 3. 24., 타법개정]</span> 
+     </div> 
+    </div> 
+    <!-- 소관부처 --> 
+    <div id="conScroll" class="scr_area" style="overflow-y: auto;"> 
+     <div class="cont_subtit"> 
+      <p> <a title="팝업으로 이동" onclick="javascript:cptOfiPop('http://www.moj.go.kr'); return false;" href="#AJAX" target="_blank"> <span title="http://www.moj.go.kr" style="cursor: pointer;">법무부</span> (<span title="" style="cursor: pointer;">법무심의관</span>), 02-2110-3164 </a> </p> 
+     </div> 
+     <!-- 조문정보 --> 
+     <a name="J1:0" id="J1:0"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0001', '00' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+       <li><a title="연혁 팝업으로 이동" style="text-decoration: none;" onclick="javascript:fJoHstShow(this, '001178', '215759', '56073829', '010202');return false;" href="#AJAX"> <img alt="연혁" src="/LSW/images/button/btn_year3.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y000100" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="1:0:000100:56073829" /> <span class="bl"><label for="Y000100"> 제1조(목적) </label> </span> 이 법은 부동산에 관한 소유권과 그 밖의 물권을 실체적 권리관계와 일치하도록 실권리자 명의(名義)로 등기하게 함으로써 부동산등기제도를 악용한 투기ㆍ탈세ㆍ탈법행위 등 반사회적 행위를 방지하고 부동산 거래의 정상화와 부동산 가격의 안정을 도모하여 국민경제의 건전한 발전에 이바지함을 목적으로 한다. </p>
+       <p class="pty1_de2"> <span class="sfon">[전문개정 2010. 3. 31.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J2:0" id="J2:0"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0002', '00' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+       <li><a title="연혁 팝업으로 이동" style="text-decoration: none;" onclick="javascript:fJoHstShow(this, '001178', '215759', '56073831', '010202');return false;" href="#AJAX"> <img alt="연혁" src="/LSW/images/button/btn_year3.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y000200" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="2:0:000200:56073831" /> <span class="bl"><label for="Y000200"> 제2조(정의) </label> </span> 이 법에서 사용하는 용어의 뜻은 다음과 같다. </p>
+       <p class="pty1_de2_1"> </p> 
+       <p class="pty1_de2h">1. “명의신탁약정”(名義信託約定)이란 부동산에 관한 소유권이나 그 밖의 물권(이하 “부동산에 관한 물권”이라 한다)을 보유한 자 또는 사실상 취득하거나 취득하려고 하는 자[이하 “실권리자”(實權利者)라 한다]가 타인과의 사이에서 대내적으로는 실권리자가 부동산에 관한 물권을 보유하거나 보유하기로 하고 그에 관한 등기(가등기를 포함한다. 이하 같다)는 그 타인의 명의로 하기로 하는 약정[위임ㆍ위탁매매의 형식에 의하거나 추인(追認)에 의한 경우를 포함한다]을 말한다. 다만, 다음 각 목의 경우는 제외한다. </p> 
+       <p class="pty1_de3">가. 채무의 변제를 담보하기 위하여 채권자가 부동산에 관한 물권을 이전(移轉)받거나 가등기하는 경우 <span class="sfon"></span></p> 
+       <p class="pty1_de3">나. 부동산의 위치와 면적을 특정하여 2인 이상이 구분소유하기로 하는 약정을 하고 그 구분소유자의 공유로 등기하는 경우 <span class="sfon"></span></p> 
+       <p class="pty1_de3">다. <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334695','ALLJO','');" href="javascript:;">「신탁법」</a> 또는 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334693','ALLJO','');" href="javascript:;">「자본시장과 금융투자업에 관한 법률」</a>에 따른 신탁재산인 사실을 등기한 경우 <span class="sfon"></span></p> 
+       <p class="pty1_de2h">2. “명의신탁자”(名義信託者)란 명의신탁약정에 따라 자신의 부동산에 관한 물권을 타인의 명의로 등기하게 하는 실권리자를 말한다. </p> 
+       <p class="pty1_de2h">3. “명의수탁자”(名義受託者)란 명의신탁약정에 따라 실권리자의 부동산에 관한 물권을 자신의 명의로 등기하는 자를 말한다. </p> 
+       <p class="pty1_de2h">4. “실명등기”(實名登記)란 법률 제4944호 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334691','ALLJO','');" href="javascript:;">부동산실권리자명의등기에관한법률</a> 시행 전에 명의신탁약정에 따라 명의수탁자의 명의로 등기된 부동산에 관한 물권을 법률 제4944호 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334691','ALLJO','');" href="javascript:;">부동산실권리자명의등기에관한법률</a> 시행일 이후 명의신탁자의 명의로 등기하는 것을 말한다. </p> 
+       <p class="pty1_de2"> <span class="sfon">[전문개정 2010. 3. 31.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J3:0" id="J3:0"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0003', '00' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+       <li><a title="연혁 팝업으로 이동" style="text-decoration: none;" onclick="javascript:fJoHstShow(this, '001178', '215759', '56073833', '010202');return false;" href="#AJAX"> <img alt="연혁" src="/LSW/images/button/btn_year3.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y000300" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="3:0:000300:56073833" /> <span class="bl"><label for="Y000300"> 제3조(실권리자명의 등기의무 등) </label> </span> ① 누구든지 부동산에 관한 물권을 명의신탁약정에 따라 명의수탁자의 명의로 등기하여서는 아니 된다. </p>
+       <p class="pty1_de2_1">② 채무의 변제를 담보하기 위하여 채권자가 부동산에 관한 물권을 이전받는 경우에는 채무자, 채권금액 및 채무변제를 위한 담보라는 뜻이 적힌 서면을 등기신청서와 함께 등기관에게 제출하여야 한다. </p> 
+       <p class="pty1_de2"> <span class="sfon">[전문개정 2010. 3. 31.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J4:0" id="J4:0"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0004', '00' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+       <li><a title="연혁 팝업으로 이동" style="text-decoration: none;" onclick="javascript:fJoHstShow(this, '001178', '215759', '56073835', '010202');return false;" href="#AJAX"> <img alt="연혁" src="/LSW/images/button/btn_year3.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y000400" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="4:0:000400:56073835" /> <span class="bl"><label for="Y000400"> 제4조(명의신탁약정의 효력) </label> </span> ① 명의신탁약정은 무효로 한다. </p>
+       <p class="pty1_de2_1">② 명의신탁약정에 따른 등기로 이루어진 부동산에 관한 물권변동은 무효로 한다. 다만, 부동산에 관한 물권을 취득하기 위한 계약에서 명의수탁자가 어느 한쪽 당사자가 되고 상대방 당사자는 명의신탁약정이 있다는 사실을 알지 못한 경우에는 그러하지 아니하다. </p> 
+       <p class="pty1_de2_1">③ 제1항 및 제2항의 무효는 제3자에게 대항하지 못한다. </p> 
+       <p class="pty1_de2"> <span class="sfon">[전문개정 2010. 3. 31.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J5:0" id="J5:0"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0005', '00' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+       <li><a title="연혁 팝업으로 이동" style="text-decoration: none;" onclick="javascript:fJoHstShow(this, '001178', '215759', '56073837', '010202');return false;" href="#AJAX"> <img alt="연혁" src="/LSW/images/button/btn_year3.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y000500" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="5:0:000500:56073837" /> <span class="bl"><label for="Y000500"> 제5조(과징금) </label> </span> ① 다음 각 호의 어느 하나에 해당하는 자에게는 해당 부동산 가액(價額)의 100분의 30에 해당하는 금액의 범위에서 과징금을 부과한다. </p>
+       <p class="pty1_de2h">1. <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334711','JO','');" href="javascript:;">제3조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334713','JO','');" href="javascript:;">제1항</a>을 위반한 명의신탁자 </p> 
+       <p class="pty1_de2h">2. <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334725','JO','');" href="javascript:;">제3조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334727','JO','');" href="javascript:;">제2항</a>을 위반한 채권자 및 같은 항에 따른 서면에 채무자를 거짓으로 적어 제출하게 한 실채무자(實債務者) </p> 
+       <p class="pty1_de2_1">② 제1항의 부동산 가액은 과징금을 부과하는 날 현재의 다음 각 호의 가액에 따른다. 다만, <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334719','JO','');" href="javascript:;">제3조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334721','JO','');" href="javascript:;">제1항</a> 또는 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334707','JO','');" href="javascript:;">제11조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334709','JO','');" href="javascript:;">제1항</a>을 위반한 자가 과징금을 부과받은 날 이미 명의신탁관계를 종료하였거나 실명등기를 하였을 때에는 명의신탁관계 종료 시점 또는 실명등기 시점의 부동산 가액으로 한다. </p> 
+       <p class="pty1_de2h">1. 소유권의 경우에는 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334715','ALLJO','');" href="javascript:;">「소득세법」</a> <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334717','JO','');" href="javascript:;">제99조</a>에 따른 기준시가 </p> 
+       <p class="pty1_de2h">2. 소유권 외의 물권의 경우에는 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334701','ALLJO','');" href="javascript:;">「상속세 및 증여세법」</a> <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334705','JO','');" href="javascript:;">제61조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334703','JO','');" href="javascript:;">제5항</a> 및 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334697','JO','');" href="javascript:;">제66조</a>에 따라 <a title="팝업으로 이동" class="link" onclick="javascript:fncLsPttnLinkPop('112882');" href="javascript:;">대통령령</a>으로 정하는 방법으로 평가한 금액 </p> 
+       <p class="pty1_de2_1">③ 제1항에 따른 과징금의 부과기준은 제2항에 따른 부동산 가액(이하 “부동산평가액”이라 한다), <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334699','JO','');" href="javascript:;">제3조</a>를 위반한 기간, 조세를 포탈하거나 법령에 따른 제한을 회피할 목적으로 위반하였는지 여부 등을 고려하여 <a title="팝업으로 이동" class="link" onclick="javascript:fncLsPttnLinkPop('112883');" href="javascript:;">대통령령</a>으로 정한다. </p> 
+       <p class="pty1_de2_1">④ 제1항에 따른 과징금이 <a title="팝업으로 이동" class="link" onclick="javascript:fncLsPttnLinkPop('112884');" href="javascript:;">대통령령</a>으로 정하는 금액을 초과하는 경우에는 그 초과하는 부분은 <a title="팝업으로 이동" class="link" onclick="javascript:fncLsPttnLinkPop('112885');" href="javascript:;">대통령령</a>으로 정하는 바에 따라 물납(物納)할 수 있다. </p> 
+       <p class="pty1_de2_1">⑤ 제1항에 따른 과징금은 해당 부동산의 소재지를 관할하는 특별자치도지사ㆍ특별자치시장ㆍ시장ㆍ군수 또는 구청장이 부과ㆍ징수한다. 이 경우 과징금은 위반사실이 확인된 후 지체 없이 부과하여야 한다. <span class="sfon">&lt;개정 2016. 1. 6.&gt;</span> </p> 
+       <p class="pty1_de2_1">⑥ 제1항에 따른 과징금을 납부기한까지 내지 아니하면 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004428727','ALLJO','');" href="javascript:;">「지방행정제재ㆍ부과금의 징수 등에 관한 법률」</a>에 따라 징수한다. <span class="sfon">&lt;개정 2013. 8. 6., 2020. 3. 24.&gt;</span> </p> 
+       <p class="pty1_de2_1">⑦ 제1항에 따른 과징금의 부과 및 징수 등에 필요한 사항은 <a title="팝업으로 이동" class="link" onclick="javascript:fncLsPttnLinkPop('112886');" href="javascript:;">대통령령</a>으로 정한다. </p> 
+       <p class="pty1_de2"> <span class="sfon">[전문개정 2010. 3. 31.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J5:2" id="J5:2"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0005', '02' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y000502" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="5:2:000502:56073839" /> <span class="bl"><label for="Y000502"> 제5조의2(과징금 납부기한의 연장 및 분할 납부) </label> </span> ① 특별자치도지사ㆍ특별자치시장ㆍ시장ㆍ군수 또는 구청장은 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334731','JO','');" href="javascript:;">제5조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334729','JO','');" href="javascript:;">제1항</a>에 따른 과징금을 부과받은 자(이하 이 조에서 “과징금 납부의무자”라 한다)가 과징금의 금액이 <a title="팝업으로 이동" class="link" onclick="javascript:fncLsPttnLinkPop('141551');" href="javascript:;">대통령령</a>으로 정하는 기준을 초과하는 경우로서 다음 각 호의 어느 하나에 해당하여 과징금의 전액을 일시에 납부하기가 어렵다고 인정할 때에는 그 납부기한을 연장하거나 분할 납부하게 할 수 있다. 이 경우 필요하다고 인정할 때에는 <a title="팝업으로 이동" class="link" onclick="javascript:fncLsPttnLinkPop('138510');" href="javascript:;">대통령령</a>으로 정하는 바에 따라 담보를 제공하게 할 수 있다. </p>
+       <p class="pty1_de2h">1. 재해 또는 도난 등으로 재산에 현저한 손실을 입은 경우 </p> 
+       <p class="pty1_de2h">2. 사업 여건의 악화로 사업이 중대한 위기에 처한 경우 </p> 
+       <p class="pty1_de2h">3. 과징금을 일시에 내면 자금사정에 현저한 어려움이 예상되는 경우 </p> 
+       <p class="pty1_de2h">4. 과징금 납부의무자 또는 동거 가족이 질병이나 중상해(重傷害)로 장기 치료가 필요한 경우 </p> 
+       <p class="pty1_de2h">5. 그 밖에 제1호부터 제4호까지의 규정에 준하는 사유가 있는 경우 </p> 
+       <p class="pty1_de2_1">② 과징금 납부의무자가 제1항에 따른 과징금 납부기한의 연장 또는 분할 납부를 신청하려는 경우에는 과징금 납부를 통지받은 날부터 30일 이내에 특별자치도지사ㆍ특별자치시장ㆍ시장ㆍ군수 또는 구청장에게 신청하여야 한다. </p> 
+       <p class="pty1_de2_1">③ 특별자치도지사ㆍ특별자치시장ㆍ시장ㆍ군수 또는 구청장은 제1항에 따라 납부기한이 연장되거나 분할 납부가 허용된 과징금 납부의무자가 다음 각 호의 어느 하나에 해당하게 된 때에는 그 납부기한의 연장 또는 분할 납부 결정을 취소하고 일시에 징수할 수 있다. </p> 
+       <p class="pty1_de2h">1. 납부기한의 연장 또는 분할 납부 결정된 과징금을 그 납부기한 내에 납부하지 아니한 때 </p> 
+       <p class="pty1_de2h">2. 담보의 변경, 그 밖에 담보 보전에 필요한 특별자치도지사ㆍ특별자치시장ㆍ시장ㆍ군수 또는 구청장의 요구를 이행하지 아니한 때 </p> 
+       <p class="pty1_de2h">3. 강제집행, 경매의 개시, 파산선고, 법인의 해산, 국세 또는 지방세의 체납처분을 받은 때 등 과징금의 전부 또는 잔여분을 징수할 수 없다고 인정되는 때 </p> 
+       <p class="pty1_de2_1">④ 제1항부터 제3항까지의 규정에 따른 과징금 납부기한의 연장, 분할 납부 또는 담보의 제공 등에 필요한 사항은 <a title="팝업으로 이동" class="link" onclick="javascript:fncLsPttnLinkPop('138511');" href="javascript:;">대통령령</a>으로 정한다. </p> 
+       <p class="pty1_de2"> <span class="sfon">[본조신설 2016. 1. 6.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J6:0" id="J6:0"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0006', '00' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+       <li><a title="연혁 팝업으로 이동" style="text-decoration: none;" onclick="javascript:fJoHstShow(this, '001178', '215759', '56073841', '010202');return false;" href="#AJAX"> <img alt="연혁" src="/LSW/images/button/btn_year3.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y000600" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="6:0:000600:56073841" /> <span class="bl"><label for="Y000600"> 제6조(이행강제금) </label> </span> ① <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334739','JO','');" href="javascript:;">제5조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334741','JO','');" href="javascript:;">제1항</a><a title="팝업으로 이동" class="link sfon4" onclick="javascript:fncLsLawPop('1004334743','JO','');" href="javascript:;">제1호</a>에 따른 과징금을 부과받은 자는 지체 없이 해당 부동산에 관한 물권을 자신의 명의로 등기하여야 한다. 다만, <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334735','JO','');" href="javascript:;">제4조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334737','JO','');" href="javascript:;">제2항</a> 단서에 해당하는 경우에는 그러하지 아니하며, 자신의 명의로 등기할 수 없는 정당한 사유가 있는 경우에는 그 사유가 소멸된 후 지체 없이 자신의 명의로 등기하여야 한다. </p>
+       <p class="pty1_de2_1">② 제1항을 위반한 자에 대하여는 과징금 부과일(제1항 단서 후단의 경우에는 등기할 수 없는 사유가 소멸한 때를 말한다)부터 1년이 지난 때에 부동산평가액의 100분의 10에 해당하는 금액을, 다시 1년이 지난 때에 부동산평가액의 100분의 20에 해당하는 금액을 각각 이행강제금으로 부과한다. </p> 
+       <p class="pty1_de2_1">③ 이행강제금에 관하여는 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334745','JO','');" href="javascript:;">제5조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334733','JO','');" href="javascript:;">제4항부터 제7항</a>까지의 규정을 준용한다. </p> 
+       <p class="pty1_de2"> <span class="sfon">[전문개정 2010. 3. 31.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J7:0" id="J7:0"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0007', '00' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+       <li><a title="연혁 팝업으로 이동" style="text-decoration: none;" onclick="javascript:fJoHstShow(this, '001178', '215759', '56073843', '010202');return false;" href="#AJAX"> <img alt="연혁" src="/LSW/images/button/btn_year3.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y000700" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="7:0:000700:56073843" /> <span class="bl"><label for="Y000700"> 제7조(벌칙) </label> </span> ① 다음 각 호의 어느 하나에 해당하는 자는 5년 이하의 징역 또는 2억원 이하의 벌금에 처한다. <span class="sfon">&lt;개정 2016. 1. 6.&gt;</span> </p>
+       <p class="pty1_de2h">1. <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334747','JO','');" href="javascript:;">제3조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334749','JO','');" href="javascript:;">제1항</a>을 위반한 명의신탁자 </p> 
+       <p class="pty1_de2h">2. <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334751','JO','');" href="javascript:;">제3조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334753','JO','');" href="javascript:;">제2항</a>을 위반한 채권자 및 같은 항에 따른 서면에 채무자를 거짓으로 적어 제출하게 한 실채무자 </p> 
+       <p class="pty1_de2_1">② <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334755','JO','');" href="javascript:;">제3조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334757','JO','');" href="javascript:;">제1항</a>을 위반한 명의수탁자는 3년 이하의 징역 또는 1억원 이하의 벌금에 처한다. <span class="sfon">&lt;개정 2016. 1. 6.&gt;</span> </p> 
+       <p class="pty1_de2_1">③ 삭제 <span class="sfon">&lt;2016. 1. 6.&gt;</span> </p> 
+       <p class="pty1_de2"> <span class="sfon">[전문개정 2010. 3. 31.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J8:0" id="J8:0"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0008', '00' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+       <li><a title="연혁 팝업으로 이동" style="text-decoration: none;" onclick="javascript:fJoHstShow(this, '001178', '215759', '56073845', '010202');return false;" href="#AJAX"> <img alt="연혁" src="/LSW/images/button/btn_year3.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y000800" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="8:0:000800:56073845" /> <span class="bl"><label for="Y000800"> 제8조(종중, 배우자 및 종교단체에 대한 특례) </label> </span> 다음 각 호의 어느 하나에 해당하는 경우로서 조세 포탈, 강제집행의 면탈(免脫) 또는 법령상 제한의 회피를 목적으로 하지 아니하는 경우에는 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334759','JO','');" href="javascript:;">제4조부터 제7조</a>까지 및 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334761','JO','');" href="javascript:;">제12조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334763','JO','');" href="javascript:;">제1항부터 제3항</a>까지를 적용하지 아니한다. <span class="sfon">&lt;개정 2013. 7. 12.&gt;</span> </p>
+       <p class="pty1_de2_1"> </p> 
+       <p class="pty1_de2h">1. 종중(宗中)이 보유한 부동산에 관한 물권을 종중(종중과 그 대표자를 같이 표시하여 등기한 경우를 포함한다) 외의 자의 명의로 등기한 경우 </p> 
+       <p class="pty1_de2h">2. 배우자 명의로 부동산에 관한 물권을 등기한 경우 </p> 
+       <p class="pty1_de2h">3. 종교단체의 명의로 그 산하 조직이 보유한 부동산에 관한 물권을 등기한 경우 </p> 
+       <p class="pty1_de2"> <span class="sfon">[전문개정 2010. 3. 31.]<br />[제목개정 2013. 7. 12.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J9:0" id="J9:0"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0009', '00' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+       <li><a title="연혁 팝업으로 이동" style="text-decoration: none;" onclick="javascript:fJoHstShow(this, '001178', '215759', '56073847', '010202');return false;" href="#AJAX"> <img alt="연혁" src="/LSW/images/button/btn_year3.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y000900" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="9:0:000900:56073847" /> <span class="bl"><label for="Y000900"> 제9조(조사 등) </label> </span> ① 특별자치도지사ㆍ특별자치시장ㆍ시장ㆍ군수 또는 구청장은 필요하다고 인정하는 경우에는 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334771','JO','');" href="javascript:;">제3조</a>, <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334775','JO','');" href="javascript:;">제10조부터 제12조</a>까지 및 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334781','JO','');" href="javascript:;">제14조</a>를 위반하였는지를 확인하기 위한 조사를 할 수 있다. <span class="sfon">&lt;개정 2016. 1. 6.&gt;</span> </p>
+       <p class="pty1_de2_1">② 국세청장은 탈세 혐의가 있다고 인정하는 경우에는 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334769','JO','');" href="javascript:;">제3조</a>, <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334773','JO','');" href="javascript:;">제10조부터 제12조</a>까지 및 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334777','JO','');" href="javascript:;">제14조</a>를 위반하였는지를 확인하기 위한 조사를 할 수 있다. </p> 
+       <p class="pty1_de2_1">③ 공무원이 그 직무를 수행할 때에 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334779','JO','');" href="javascript:;">제3조</a>, <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334767','JO','');" href="javascript:;">제10조부터 제12조</a>까지 및 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334765','JO','');" href="javascript:;">제14조</a>를 위반한 사실을 알게 된 경우에는 국세청장과 해당 부동산의 소재지를 관할하는 특별자치도지사ㆍ특별자치시장ㆍ시장ㆍ군수 또는 구청장에게 그 사실을 통보하여야 한다. <span class="sfon">&lt;개정 2016. 1. 6.&gt;</span> </p> 
+       <p class="pty1_de2"> <span class="sfon">[전문개정 2010. 3. 31.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J10:0" id="J10:0"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0010', '00' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+       <li><a title="연혁 팝업으로 이동" style="text-decoration: none;" onclick="javascript:fJoHstShow(this, '001178', '215759', '56073849', '010202');return false;" href="#AJAX"> <img alt="연혁" src="/LSW/images/button/btn_year3.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y001000" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="10:0:001000:56073849" /> <span class="bl"><label for="Y001000"> 제10조(장기미등기자에 대한 벌칙 등) </label> </span> ① <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334785','ALLJO','');" href="javascript:;">「부동산등기 특별조치법」</a> <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334787','JO','');" href="javascript:;">제2조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334789','JO','');" href="javascript:;">제1항</a>, <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334797','JO','');" href="javascript:;">제11조</a> 및 법률 제4244호 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334803','ALLJO','');" href="javascript:;">부동산등기특별조치법</a> 부칙 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334791','JO','');" href="javascript:;">제2조</a>를 적용받는 자로서 다음 각 호의 어느 하나에 해당하는 날부터 3년 이내에 소유권이전등기를 신청하지 아니한 등기권리자(이하 “장기미등기자”라 한다)에게는 부동산평가액의 100분의 30의 범위에서 과징금(「부동산등기 특별조치법」 제11조에 따른 과태료가 이미 부과된 경우에는 그 과태료에 상응하는 금액을 뺀 금액을 말한다)을 부과한다. 다만, <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334799','JO','');" href="javascript:;">제4조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334801','JO','');" href="javascript:;">제2항</a> 본문 및 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334793','JO','');" href="javascript:;">제12조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334795','JO','');" href="javascript:;">제1항</a>에 따라 등기의 효력이 발생하지 아니하여 새로 등기를 신청하여야 할 사유가 발생한 경우와 등기를 신청하지 못할 정당한 사유가 있는 경우에는 그러하지 아니하다. </p>
+       <p class="pty1_de2h">1. 계약당사자가 서로 대가적(代價的)인 채무를 부담하는 경우에는 반대급부의 이행이 사실상 완료된 날 </p> 
+       <p class="pty1_de2h">2. 계약당사자의 어느 한쪽만이 채무를 부담하는 경우에는 그 계약의 효력이 발생한 날 </p> 
+       <p class="pty1_de2_1">② 제1항에 따른 과징금의 부과기준은 부동산평가액, 소유권이전등기를 신청하지 아니한 기간, 조세를 포탈하거나 법령에 따른 제한을 회피할 목적으로 하였는지 여부, <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334805','ALLJO','');" href="javascript:;">「부동산등기 특별조치법」</a> <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334807','JO','');" href="javascript:;">제11조</a>에 따른 과태료가 부과되었는지 여부 등을 고려하여 <a title="팝업으로 이동" class="link" onclick="javascript:fncLsPttnLinkPop('112605');" href="javascript:;">대통령령</a>으로 정한다. </p> 
+       <p class="pty1_de2_1">③ 제1항의 과징금에 관하여는 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334809','JO','');" href="javascript:;">제5조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334811','JO','');" href="javascript:;">제4항부터 제7항</a>까지 및 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334783','JO','');" href="javascript:;">제5조의2</a>를 준용한다. <span class="sfon">&lt;개정 2016. 1. 6.&gt;</span> </p> 
+       <p class="pty1_de2_1">④ 장기미등기자가 제1항에 따라 과징금을 부과받고도 소유권이전등기를 신청하지 아니하면 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334813','JO','');" href="javascript:;">제6조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334815','JO','');" href="javascript:;">제2항</a> 및 <a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334817','JO','');" href="javascript:;">제3항</a>을 준용하여 이행강제금을 부과한다. </p> 
+       <p class="pty1_de2_1">⑤ 장기미등기자(제1항 단서에 해당하는 자는 제외한다)는 5년 이하의 징역 또는 2억원 이하의 벌금에 처한다. <span class="sfon">&lt;개정 2016. 1. 6.&gt;</span> </p> 
+       <p class="pty1_de2"> <span class="sfon">[전문개정 2010. 3. 31.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J11:0" id="J11:0"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0011', '00' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+       <li><a title="연혁 팝업으로 이동" style="text-decoration: none;" onclick="javascript:fJoHstShow(this, '001178', '215759', '56073851', '010202');return false;" href="#AJAX"> <img alt="연혁" src="/LSW/images/button/btn_year3.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y001100" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="11:0:001100:56073851" /> <span class="bl"><label for="Y001100"> 제11조(기존 명의신탁약정에 따른 등기의 실명등기 등) </label> </span> ① 법률 제4944호 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334823','ALLJO','');" href="javascript:;">부동산실권리자명의등기에관한법률</a> 시행 전에 명의신탁약정에 따라 부동산에 관한 물권을 명의수탁자의 명의로 등기하거나 등기하도록 한 명의신탁자(이하 “기존 명의신탁자”라 한다)는 법률 제4944호 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334823','ALLJO','');" href="javascript:;">부동산실권리자명의등기에관한법률</a> 시행일부터 1년의 기간(이하 “유예기간”이라 한다) 이내에 실명등기하여야 한다. 다만, 공용징수, 판결, 경매 또는 그 밖에 법률에 따라 명의수탁자로부터 제3자에게 부동산에 관한 물권이 이전된 경우(상속에 의한 이전은 제외한다)와 종교단체, 향교 등이 조세 포탈, 강제집행의 면탈을 목적으로 하지 아니하고 명의신탁한 부동산으로서 <a title="팝업으로 이동" class="link" onclick="javascript:fncLsPttnLinkPop('112606');" href="javascript:;">대통령령</a>으로 정하는 경우는 그러하지 아니하다. </p>
+       <p class="pty1_de2_1">② 다음 각 호의 어느 하나에 해당하는 경우에는 제1항에 따라 실명등기를 한 것으로 본다. <span class="sfon">&lt;개정 2011. 5. 19., 2016. 1. 6., 2019. 11. 26.&gt;</span> </p> 
+       <p class="pty1_de2h">1. 기존 명의신탁자가 해당 부동산에 관한 물권에 대하여 매매나 그 밖의 처분행위를 하고 유예기간 이내에 그 처분행위로 인한 취득자에게 직접 등기를 이전한 경우 </p> 
+       <p class="pty1_de2h">2. 기존 명의신탁자가 유예기간 이내에 다른 법률에 따라 해당 부동산의 소재지를 관할하는 특별자치도지사ㆍ특별자치시장ㆍ시장ㆍ군수 또는 구청장에게 매각을 위탁하거나 <a title="팝업으로 이동" class="link" onclick="javascript:fncLsPttnLinkPop('112607');" href="javascript:;">대통령령</a>으로 정하는 바에 따라 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334887','ALLJO','');" href="javascript:;">「한국자산관리공사 설립 등에 관한 법률」</a>에 따라 설립된 한국자산관리공사에 매각을 의뢰한 경우. 다만, 매각위탁 또는 매각의뢰를 철회한 경우에는 그러하지 아니하다. </p> 
+       <p class="pty1_de2_1">③ 실권리자의 귀책사유 없이 다른 법률에 따라 제1항 및 제2항에 따른 실명등기 또는 매각처분 등을 할 수 없는 경우에는 그 사유가 소멸한 때부터 1년 이내에 실명등기 또는 매각처분 등을 하여야 한다. </p> 
+       <p class="pty1_de2_1">④ 법률 제4944호 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334819','ALLJO','');" href="javascript:;">부동산실권리자명의등기에관한법률</a> 시행 전 또는 유예기간 중에 부동산물권에 관한 쟁송이 법원에 제기된 경우에는 그 쟁송에 관한 확정판결(이와 동일한 효력이 있는 경우를 포함한다)이 있은 날부터 1년 이내에 제1항 및 제2항에 따른 실명등기 또는 매각처분 등을 하여야 한다. </p> 
+       <p class="pty1_de2"> <span class="sfon">[전문개정 2010. 3. 31.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J12:0" id="J12:0"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0012', '00' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+       <li><a title="연혁 팝업으로 이동" style="text-decoration: none;" onclick="javascript:fJoHstShow(this, '001178', '215759', '56073853', '010202');return false;" href="#AJAX"> <img alt="연혁" src="/LSW/images/button/btn_year3.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y001200" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="12:0:001200:56073853" /> <span class="bl"><label for="Y001200"> 제12조(실명등기의무 위반의 효력 등) </label> </span> ① <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334825','JO','');" href="javascript:;">제11조</a>에 규정된 기간 이내에 실명등기 또는 매각처분 등을 하지 아니한 경우 그 기간이 지난 날 이후의 명의신탁약정 등의 효력에 관하여는 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334843','JO','');" href="javascript:;">제4조</a>를 적용한다. </p>
+       <p class="pty1_de2_1">② <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334833','JO','');" href="javascript:;">제11조</a>를 위반한 자에 대하여는 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334829','JO','');" href="javascript:;">제3조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334831','JO','');" href="javascript:;">제1항</a>을 위반한 자에 준하여 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334837','JO','');" href="javascript:;">제5조</a>, <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334841','JO','');" href="javascript:;">제5조의2</a> 및 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334839','JO','');" href="javascript:;">제6조</a>를 적용한다. <span class="sfon">&lt;개정 2016. 1. 6.&gt;</span> </p> 
+       <p class="pty1_de2_1">③ 법률 제4944호 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334835','ALLJO','');" href="javascript:;">부동산실권리자명의등기에관한법률</a> 시행 전에 명의신탁약정에 따른 등기를 한 사실이 없는 자가 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334827','JO','');" href="javascript:;">제11조</a>에 따른 실명등기를 가장하여 등기한 경우에는 5년 이하의 징역 또는 2억원 이하의 벌금에 처한다. </p> 
+       <p class="pty1_de2"> <span class="sfon">[전문개정 2010. 3. 31.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J12:2" id="J12:2"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0012', '02' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y001202" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="12:2:001202:56073855" /> <span class="bl"><label for="Y001202"> 제12조의2(양벌규정) </label> </span> 법인 또는 단체의 대표자나 법인ㆍ단체 또는 개인의 대리인ㆍ사용인 및 그 밖의 종업원이 그 법인ㆍ단체 또는 개인의 업무에 관하여 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334853','JO','');" href="javascript:;">제7조</a>, <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334849','JO','');" href="javascript:;">제10조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334851','JO','');" href="javascript:;">제5항</a> 또는 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334845','JO','');" href="javascript:;">제12조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334847','JO','');" href="javascript:;">제3항</a>의 위반행위를 하면 그 행위자를 벌하는 외에 그 법인ㆍ단체 또는 개인에게도 해당 조문의 벌금형을 과한다. 다만, 법인ㆍ단체 또는 개인이 그 위반행위를 방지하기 위하여 해당 업무에 관하여 상당한 주의와 감독을 게을리하지 아니한 경우에는 그러하지 아니하다. </p>
+       <p class="pty1_de2"> <span class="sfon">[본조신설 2016. 1. 6.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J13:0" id="J13:0"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0013', '00' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+       <li><a title="연혁 팝업으로 이동" style="text-decoration: none;" onclick="javascript:fJoHstShow(this, '001178', '215759', '56073857', '010202');return false;" href="#AJAX"> <img alt="연혁" src="/LSW/images/button/btn_year3.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y001300" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="13:0:001300:56073857" /> <span class="bl"><label for="Y001300"> 제13조(실명등기에 대한 조세부과의 특례) </label> </span> ① <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334863','JO','');" href="javascript:;">제11조</a>에 따라 실명등기를 한 부동산이 1건이고 그 가액이 5천만원 이하인 경우로서 다음 각 호의 어느 하나에 해당하는 경우에는 이미 면제되거나 적게 부과된 조세 또는 부과되지 아니한 조세는 추징(追徵)하지 아니한다. 이 경우 실명등기를 한 부동산의 범위 및 가액의 계산에 대하여는 <a title="팝업으로 이동" class="link" onclick="javascript:fncLsPttnLinkPop('112608');" href="javascript:;">대통령령</a>으로 정한다. </p>
+       <p class="pty1_de2h">1. 종전의 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334873','ALLJO','');" href="javascript:;">「소득세법」</a>(법률 제4803호로 개정되기 전의 법률을 말한다) <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334869','JO','');" href="javascript:;">제5조</a><a title="팝업으로 이동" class="link sfon4" onclick="javascript:fncLsLawPop('1004334871','JO','');" href="javascript:;">제6호</a>에 따라 명의신탁자 및 그와 생계를 같이 하는 1세대(世帶)가 법률 제4944호 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334865','ALLJO','');" href="javascript:;">부동산실권리자명의등기에관한법률</a> 시행 전에 1세대1주택 양도에 따른 비과세를 받은 경우로서 실명등기로 인하여 해당 주택을 양도한 날에 비과세에 해당하지 아니하게 되는 경우 </p> 
+       <p class="pty1_de2h">2. 종전의 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334855','ALLJO','');" href="javascript:;">「상속세법」</a>(법률 제5193호로 개정되기 전의 법률을 말한다) <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334861','JO','');" href="javascript:;">제32조의2</a>에 따라 명의자에게 법률 제4944호 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334859','ALLJO','');" href="javascript:;">부동산실권리자명의등기에관한법률</a> 시행 전에 납세의무가 성립된 증여세를 부과하는 경우 </p> 
+       <p class="pty1_de2_1">② 실명등기를 한 부동산이 비업무용 부동산에 해당하는 경우로서 유예기간(<a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1007023753','JO','');" href="javascript:;">제11조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1007023755','JO','');" href="javascript:;">제3항</a> 및 <a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1007023757','JO','');" href="javascript:;">제4항</a>의 경우에는 그 사유가 소멸한 때부터 1년의 기간을 말한다) 종료 시까지 해당 법인의 고유업무에 직접 사용할 때에는 법률 제6312호 지방세법중개정법률 부칙 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334867','JO','');" href="javascript:;">제10조</a>에도 불구하고 종전의 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334877','ALLJO','');" href="javascript:;">「지방세법」</a>(법률 제6312호로 개정되기 전의 법률을 말한다) <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334857','JO','');" href="javascript:;">제112조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334875','JO','');" href="javascript:;">제2항</a>의 세율을 적용하지 아니한다. </p> 
+       <p class="pty1_de2"> <span class="sfon">[전문개정 2010. 3. 31.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J14:0" id="J14:0"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0014', '00' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+       <li><a title="연혁 팝업으로 이동" style="text-decoration: none;" onclick="javascript:fJoHstShow(this, '001178', '215759', '56073859', '010202');return false;" href="#AJAX"> <img alt="연혁" src="/LSW/images/button/btn_year3.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y001400" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="14:0:001400:56073859" /> <span class="bl"><label for="Y001400"> 제14조(기존 양도담보권자의 서면 제출 의무 등) </label> </span> ① 법률 제4944호 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334885','ALLJO','');" href="javascript:;">부동산실권리자명의등기에관한법률</a> 시행 전에 채무의 변제를 담보하기 위하여 채권자가 부동산에 관한 물권을 이전받은 경우에는 법률 제4944호 <a title="팝업으로 이동" class="link sfon1" onclick="javascript:fncLsLawPop('1004334885','ALLJO','');" href="javascript:;">부동산실권리자명의등기에관한법률</a> 시행일부터 1년 이내에 채무자, 채권금액 및 채무변제를 위한 담보라는 뜻이 적힌 서면을 등기관에게 제출하여야 한다. </p>
+       <p class="pty1_de2_1">② 제1항을 위반한 채권자 및 제1항에 따른 서면에 채무자를 거짓으로 적어 제출하게 한 실채무자에 대하여는 해당 부동산평가액의 100분의 30의 범위에서 과징금을 부과한다. </p> 
+       <p class="pty1_de2_1">③ 제2항에 따른 과징금의 부과기준은 부동산평가액, 제1항을 위반한 기간, 조세를 포탈하거나 법령에 따른 제한을 회피할 목적으로 위반하였는지 여부 등을 고려하여 <a title="팝업으로 이동" class="link" onclick="javascript:fncLsPttnLinkPop('112609');" href="javascript:;">대통령령</a>으로 정한다. </p> 
+       <p class="pty1_de2_1">④ 제2항에 따른 과징금에 관하여는 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334879','JO','');" href="javascript:;">제5조</a><a title="팝업으로 이동" class="link sfon3" onclick="javascript:fncLsLawPop('1004334881','JO','');" href="javascript:;">제4항부터 제7항</a>까지 및 <a title="팝업으로 이동" class="link sfon2" onclick="javascript:fncLsLawPop('1004334883','JO','');" href="javascript:;">제5조의2</a>를 준용한다. <span class="sfon">&lt;개정 2016. 1. 6.&gt;</span> </p> 
+       <p class="pty1_de2"> <span class="sfon">[전문개정 2010. 3. 31.]</span> </p> 
+       <p></p> 
+      </div> 
+     </div> 
+     <a name="J15:0" id="J15:0"></a> 
+     <div class="pgroup"> 
+      <ul class="lawico01"> 
+       <li><a title="조문체계도 팝업으로 이동" style="text-decoration: none;" onclick="javascript:joStmdPop('215759', '0015', '00' );return false; " href="#AJAX"> <img alt="조문체계도버튼" src="/LSW/images/button/btn_jostmdico.gif" /> </a></li> 
+       <li><a title="연혁 팝업으로 이동" style="text-decoration: none;" onclick="javascript:fJoHstShow(this, '001178', '215759', '56073861', '010202');return false;" href="#AJAX"> <img alt="연혁" src="/LSW/images/button/btn_year3.gif" /> </a></li> 
+      </ul> 
+      <div class="lawcon"> 
+       <p class="pty1_p4"> <input name="joNoList" id="Y001500" style="vertical-align: middle;" onclick="javascript:getJoSelectLayer(this,'');" type="checkbox" value="15:0:001500:56073861" /> <span class="bl"><label for="Y001500"> 제15조 </label> </span> <input type="hidden" id="delJo56073861" value="삭제" /> 삭제 <span class="sfon">&lt;1997. 12. 13.&gt;</span> </p> 
+      </div> 
+     </div> 
+     <!-- 조문정보 --> 
+     <!-- 부칙 영역 끝 --> 
+     <br /> 
+     <div id="arDivArea"> 
+      <a name="arArea"></a> 
+      <a name="J6041003" id="J6041003"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <a class="nun" onclick="javascript:arView('ar6041003','<법률 제4944호, 1995. 3. 30.>'); return false;" href="#AJAX"> <img id="ar6041003btn" style="vertical-align: middle;" alt="부칙 <법률 제4944호, 1995. 3. 30.>조문목록 접기" src="/LSW/images/button/btn_cocl.gif" /> </a> <input name="arInf" id="chk6041003" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제4944호, 1995. 3. 30.>체크박스 " value="6041003" /> <a class="nun" onclick="javascript:arView('ar6041003','<법률 제4944호, 1995. 3. 30.>'); return false;" href="#AJAX"> <label for="chk6041003"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제4944호, 1995. 3. 30.&gt;</span> </a> <a class="nun" onclick="javascript:arView('ar6041003','<법률 제4944호, 1995. 3. 30.>');return false;" href="#AJAX"> <img id="ar6041003MrBtn" style="vertical-align: middle;" alt="부칙 <법률 제4944호, 1995. 3. 30.>보기" src="/LSW/images/button/btn_more_bu.gif" /> </a> </p> 
+       <p class="pty3_dep1"><span class="bl">제1조 (시행일)</span> 이 법은 1995년 7월 1일부터 시행한다.</p>
+       <div id="ar6041003">
+        <p class="pty3_dep1"><span class="bl">제2조 (적용례)</span> ①제3조 및 제13조의 규정은 이 법 시행후 등기하는 분부터 적용한다.</p>
+        <p class="pty3_dep2"> ②제4조의 규정은 이 법 시행전에 명의신탁약정을 하고 이 법 시행후에 이에 의한 등기를 한 경우에도 이를 적용한다.</p>
+        <p class="pty3_dep1"><span class="bl">제3조 (장기미등기자에 관한 경과조치)</span> 이 법 시행전에 제10조제1항 각호에 규정하는 날이 경과한 경우에는 동조동항에 규정한 3년의 기간은 이 법 시행일부터 기산한다.</p>
+        <p class="pty3_dep1"><span class="bl">제4조 (다른 법률의 개정)</span> ①조세감면규제법중 다음과 같이 개정한다.</p>
+        <p class="pty3_dep2"> 제3조제1항에 제23호를 다음과 같이 신설한다.</p>
+        <p class="pty3_dep2"> 23. 부동산실권리자명의등기에관한법률</p>
+        <p class="pty3_dep2"> ②부동산등기특별조치법중 다음과 같이 개정한다.</p>
+        <p class="pty3_dep2"> 제7조ㆍ제8조제3호 및 제9조제2호를 각각 삭제한다.</p>
+        <p class="pty3_dep2"> 제11조제1항 단서를 다음과 같이 한다.</p>
+        <p class="pty3_dep2"> 다만, 부동산실권리자명의등기에관한법률 제10조제1항의 규정에 의하여 과징금을 부과한 경우에는 그러하지 아니하다.</p>
+        <p class="pty3_dep1"><span class="bl">제5조 (다른 법률의 개정에 따른 벌칙에 관한 경과조치)</span> 이 법 시행전에 종전의 부동산등기특별조치법 제7조의 규정을 위반한 자에 대한 벌칙의 적용에 있어서는 종전의 규정에 의한다.</p>
+       </div> 
+      </div> 
+      <a name="J6041005" id="J6041005"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <a class="nun" onclick="javascript:arView('ar6041005','<법률 제5193호, 1996. 12. 30.>'); return false;" href="#AJAX"> <img id="ar6041005btn" style="vertical-align: middle;" alt="부칙 <법률 제5193호, 1996. 12. 30.>조문목록 접기" src="/LSW/images/button/btn_cocl.gif" /> </a> <input name="arInf" id="chk6041005" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제5193호, 1996. 12. 30.>체크박스 " value="6041005" /> <a class="nun" onclick="javascript:arView('ar6041005','<법률 제5193호, 1996. 12. 30.>'); return false;" href="#AJAX"> <label for="chk6041005"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제5193호, 1996. 12. 30.&gt;</span> </a> <a class="nun" onclick="javascript:fncArLawPop('상속세및증여세법', '19961230', '05193');" href="#AJAX"> <span class="sfon">(상속세및증여세법) </span> </a> <a class="nun" onclick="javascript:arView('ar6041005','<법률 제5193호, 1996. 12. 30.>');return false;" href="#AJAX"> <img id="ar6041005MrBtn" style="vertical-align: middle;" alt="부칙 <법률 제5193호, 1996. 12. 30.>보기" src="/LSW/images/button/btn_more_bu.gif" /> </a> </p> 
+       <p class="pty3_dep1"><span class="bl">제1조 (시행일)</span> 이 법은 1997년 1월 1일부터 시행한다.</p>
+       <div id="ar6041005">
+        <p class="pty3_dep1"><span class="bl">제2조</span> 내지 제13조 생략</p>
+        <p class="pty3_dep1"><span class="bl">제14조 (다른 법률의 개정)</span> ① 내지 ⑥생략</p>
+        <p class="pty3_dep2"> ⑦부동산실권리자명의등기에관한법률중 다음과 같이 개정한다.</p>
+        <p class="pty3_dep2"> 제5조제2항제2호중 “상속세법 제9조제4항 및 제5항”을 “상속세및증여세법 제61조제4항 및 제66조”로 하며, 제13조제1항제2호중 “상속세법 제32조의2”를 “법률 제4805호 상속세법중개정법률 제32조의2”로 한다.</p>
+        <p class="pty3_dep2"> ⑧생략</p>
+        <p class="pty3_dep1"><span class="bl">제15조</span> 생략</p>
+       </div> 
+      </div> 
+      <a name="J6041007" id="J6041007"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <a class="nun" onclick="javascript:arView('ar6041007','<법률 제5371호, 1997. 8. 22.>'); return false;" href="#AJAX"> <img id="ar6041007btn" style="vertical-align: middle;" alt="부칙 <법률 제5371호, 1997. 8. 22.>조문목록 접기" src="/LSW/images/button/btn_cocl.gif" /> </a> <input name="arInf" id="chk6041007" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제5371호, 1997. 8. 22.>체크박스 " value="6041007" /> <a class="nun" onclick="javascript:arView('ar6041007','<법률 제5371호, 1997. 8. 22.>'); return false;" href="#AJAX"> <label for="chk6041007"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제5371호, 1997. 8. 22.&gt;</span> </a> <a class="nun" onclick="javascript:fncArLawPop('금융기관부실자산등의효율적처리및성업공사의설립에관한법률', '19970822', '05371');" href="#AJAX"> <span class="sfon">(금융기관부실자산등의효율적처리및성업공사의설립에관한법률) </span> </a> <a class="nun" onclick="javascript:arView('ar6041007','<법률 제5371호, 1997. 8. 22.>');return false;" href="#AJAX"> <img id="ar6041007MrBtn" style="vertical-align: middle;" alt="부칙 <법률 제5371호, 1997. 8. 22.>보기" src="/LSW/images/button/btn_more_bu.gif" /> </a> </p> 
+       <p class="pty3_dep1"><span class="bl">제1조 (시행일)</span> 이 법은 공포후 3월이 경과한 날부터 시행한다.</p>
+       <div id="ar6041007">
+        <p class="pty3_dep1"><span class="bl">제2조</span> 내지 제8조 생략</p>
+        <p class="pty3_dep1"><span class="bl">제9조 (다른 법률의 개정 및 다른 법령과의 관계)</span> ① 내지 ④생략</p>
+        <p class="pty3_dep2"> ⑤부동산실권리자명의등기에관한법률중 다음과 같이 개정한다.</p>
+        <p class="pty3_dep2"> 제11조제2항제2호 본문중 “한국산업은행법에 의하여 설립된 성업공사”를 “금융기관부실자산등의효율적처리및성업공사의설립에관한법률에 의하여 설립된 성업공사”로 한다.</p>
+        <p class="pty3_dep2"> ⑥ 내지 ⑧생략</p>
+       </div> 
+      </div> 
+      <a name="J6041009" id="J6041009"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <a class="nun" onclick="javascript:arView('ar6041009','<법률 제5453호, 1997. 12. 13.>'); return false;" href="#AJAX"> <img id="ar6041009btn" style="vertical-align: middle;" alt="부칙 <법률 제5453호, 1997. 12. 13.>조문목록 접기" src="/LSW/images/button/btn_cocl.gif" /> </a> <input name="arInf" id="chk6041009" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제5453호, 1997. 12. 13.>체크박스 " value="6041009" /> <a class="nun" onclick="javascript:arView('ar6041009','<법률 제5453호, 1997. 12. 13.>'); return false;" href="#AJAX"> <label for="chk6041009"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제5453호, 1997. 12. 13.&gt;</span> </a> <a class="nun" onclick="javascript:fncArLawPop('행정절차법의시행에따른공인회계사법등의정비에관한법률', '19971213', '05453');" href="#AJAX"> <span class="sfon">(행정절차법의시행에따른공인회계사법등의정비에관한법률) </span> </a> <a class="nun" onclick="javascript:arView('ar6041009','<법률 제5453호, 1997. 12. 13.>');return false;" href="#AJAX"> <img id="ar6041009MrBtn" style="vertical-align: middle;" alt="부칙 <법률 제5453호, 1997. 12. 13.>보기" src="/LSW/images/button/btn_more_bu.gif" /> </a> </p> 
+       <p class="pty3_dep1"><span class="bl">제1조 (시행일)</span> 이 법은 1998년 1월 1일부터 시행한다. &lt;단서 생략&gt;</p>
+       <div id="ar6041009">
+        <p class="pty3_dep1"><span class="bl">제2조</span> 생략</p>
+       </div> 
+      </div> 
+      <a name="J6041011" id="J6041011"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <img id="ar6041011btn" style="vertical-align: middle;" alt="부칙<법률 제5582호, 1998. 12. 28.>조문목록 없음" src="/LSW/images/button/btn_dot.gif" /> <input name="arInf" id="chk6041011" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제5582호, 1998. 12. 28.>체크박스 " value="6041011" /> <a class="nun" onclick="javascript:arView('ar6041011','<법률 제5582호, 1998. 12. 28.>'); return false;" href="#AJAX"> <label for="chk6041011"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제5582호, 1998. 12. 28.&gt;</span> </a> <a class="nun" onclick="javascript:fncArLawPop('상속세및증여세법', '19981228', '05582');" href="#AJAX"> <span class="sfon">(상속세및증여세법) </span> </a> </p> 
+       <p class="pty3_dep1">①(시행일) 이 법은 1999년 1월 1일부터 시행한다.</p>
+       <p class="pty3_dep1">②내지 ④ 생략</p>
+       <p class="pty3_dep1">⑤(다른 법률의 개정) 부동산실권리자명의등기에관한법률중 다음과 같이 개정한다.</p>
+       <p class="pty3_dep1"> 제5조제2항중 “상속세및증여세법 제61조제4항”을 “상속세및증여세법 제61조제5항”으로 한다.</p> 
+      </div> 
+      <a name="J6041013" id="J6041013"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <a class="nun" onclick="javascript:arView('ar6041013','<법률 제5592호, 1998. 12. 28.>'); return false;" href="#AJAX"> <img id="ar6041013btn" style="vertical-align: middle;" alt="부칙 <법률 제5592호, 1998. 12. 28.>조문목록 접기" src="/LSW/images/button/btn_cocl.gif" /> </a> <input name="arInf" id="chk6041013" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제5592호, 1998. 12. 28.>체크박스 " value="6041013" /> <a class="nun" onclick="javascript:arView('ar6041013','<법률 제5592호, 1998. 12. 28.>'); return false;" href="#AJAX"> <label for="chk6041013"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제5592호, 1998. 12. 28.&gt;</span> </a> <a class="nun" onclick="javascript:fncArLawPop('부동산등기법', '19981228', '05592');" href="#AJAX"> <span class="sfon">(부동산등기법) </span> </a> <a class="nun" onclick="javascript:arView('ar6041013','<법률 제5592호, 1998. 12. 28.>');return false;" href="#AJAX"> <img id="ar6041013MrBtn" style="vertical-align: middle;" alt="부칙 <법률 제5592호, 1998. 12. 28.>보기" src="/LSW/images/button/btn_more_bu.gif" /> </a> </p> 
+       <p class="pty3_dep1"><span class="bl">제1조 (시행일)</span> 이 법은 공포한 날부터 시행한다.</p>
+       <div id="ar6041013">
+        <p class="pty3_dep1"><span class="bl">제2조 (다른 법률의 개정)</span> ① 내지 ④ 생략</p>
+        <p class="pty3_dep2"> ⑤부동산실권이자명의등기에관한법률중 다음과 같이 개정한다.</p>
+        <p class="pty3_dep2"> 제3조제2항 및 제14조제1항중 “등기공무원”을 각각 “등기관”으로 한다.</p>
+        <p class="pty3_dep2"> ⑥ 내지 ⑩ 생략</p>
+        <p class="pty3_dep1"><span class="bl">제3조</span> 생략</p>
+       </div> 
+      </div> 
+      <a name="J6041015" id="J6041015"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <a class="nun" onclick="javascript:arView('ar6041015','<법률 제6073호, 1999. 12. 31.>'); return false;" href="#AJAX"> <img id="ar6041015btn" style="vertical-align: middle;" alt="부칙 <법률 제6073호, 1999. 12. 31.>조문목록 접기" src="/LSW/images/button/btn_cocl.gif" /> </a> <input name="arInf" id="chk6041015" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제6073호, 1999. 12. 31.>체크박스 " value="6041015" /> <a class="nun" onclick="javascript:arView('ar6041015','<법률 제6073호, 1999. 12. 31.>'); return false;" href="#AJAX"> <label for="chk6041015"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제6073호, 1999. 12. 31.&gt;</span> </a> <a class="nun" onclick="javascript:fncArLawPop('금융기관부실자산등의효율적처리및한국자산관리공사의설립에관한법률', '19991231', '06073');" href="#AJAX"> <span class="sfon">(금융기관부실자산등의효율적처리및한국자산관리공사의설립에관한법률) </span> </a> <a class="nun" onclick="javascript:arView('ar6041015','<법률 제6073호, 1999. 12. 31.>');return false;" href="#AJAX"> <img id="ar6041015MrBtn" style="vertical-align: middle;" alt="부칙 <법률 제6073호, 1999. 12. 31.>보기" src="/LSW/images/button/btn_more_bu.gif" /> </a> </p> 
+       <p class="pty3_dep1"><span class="bl">제1조 (시행일)</span> 이 법은 공포한 날부터 시행한다.</p>
+       <div id="ar6041015">
+        <p class="pty3_dep1"><span class="bl">제2조</span> 생략</p>
+        <p class="pty3_dep1"><span class="bl">제3조 (다른 법률의 개정)</span> ①내지 ④생략</p>
+        <p class="pty3_dep2"> ⑤부동산실권리자명의등기에관한법률중 다음과 같이 개정한다.</p>
+        <p class="pty3_dep2"> 제11조제2항2호 본문중 “금융기관부실자산등의효율적처리및성업공사의설립에관한법률에 의하여 설립된 성업공사”를 “금융기관부실자산등의효율적처리및한국자산관리공사의설립에관한법률에 의하여 설립된 한국자산관리공사”로 한다.</p>
+        <p class="pty3_dep2"> ⑥내지 ⑫생략</p>
+       </div> 
+      </div> 
+      <a name="J6041017" id="J6041017"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <img id="ar6041017btn" style="vertical-align: middle;" alt="부칙<법률 제6683호, 2002. 3. 30.>조문목록 없음" src="/LSW/images/button/btn_dot.gif" /> <input name="arInf" id="chk6041017" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제6683호, 2002. 3. 30.>체크박스 " value="6041017" /> <a class="nun" onclick="javascript:arView('ar6041017','<법률 제6683호, 2002. 3. 30.>'); return false;" href="#AJAX"> <label for="chk6041017"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제6683호, 2002. 3. 30.&gt;</span> </a> </p> 
+       <p class="pty3_dep1">①(시행일) 이 법은 공포한 날부터 시행한다.</p>
+       <p class="pty3_dep1">②(적용례) 제5조제1항ㆍ제3항(제12조제2항의 규정에 의하여 적용되는 경우를 포함한다), 제10조제1항ㆍ제2항 및 제14조제2항ㆍ제3항의 개정규정은 이 법 시행후 최초로 과징금을 부과하는 분부터 적용한다. 다만, 종전의 규정에 의하여 부과된 과징금처분(행정심판 또는 행정소송이 제기된 것에 한한다)에 대하여도 이를 적용한다.</p> 
+      </div> 
+      <a name="J6041019" id="J6041019"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <img id="ar6041019btn" style="vertical-align: middle;" alt="부칙<법률 제8418호, 2007. 5. 11.>조문목록 없음" src="/LSW/images/button/btn_dot.gif" /> <input name="arInf" id="chk6041019" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제8418호, 2007. 5. 11.>체크박스 " value="6041019" /> <a class="nun" onclick="javascript:arView('ar6041019','<법률 제8418호, 2007. 5. 11.>'); return false;" href="#AJAX"> <label for="chk6041019"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제8418호, 2007. 5. 11.&gt;</span> </a> </p> 
+       <p class="pty3_dep1">①(시행일) 이 법은 공포한 날부터 시행한다.</p>
+       <p class="pty3_dep1">②(적용례) 제5조제2항(제12조제2항의 규정에 따라 적용되는 경우를 포함한다)의 개정규정은 이 법 시행 후 최초로 과징금을 부과하는 분부터 적용한다. 다만, 종전의 규정에 따라 부과된 과징금처분(행정심판 또는 행정소송이 제기되어 그 절차가 종료되지 아니한 것에 한한다)에 대하여도 이를 적용한다.</p> 
+      </div> 
+      <a name="J6041021" id="J6041021"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <a class="nun" onclick="javascript:arView('ar6041021','<법률 제8635호, 2007. 8. 3.>'); return false;" href="#AJAX"> <img id="ar6041021btn" style="vertical-align: middle;" alt="부칙 <법률 제8635호, 2007. 8. 3.>조문목록 접기" src="/LSW/images/button/btn_cocl.gif" /> </a> <input name="arInf" id="chk6041021" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제8635호, 2007. 8. 3.>체크박스 " value="6041021" /> <a class="nun" onclick="javascript:arView('ar6041021','<법률 제8635호, 2007. 8. 3.>'); return false;" href="#AJAX"> <label for="chk6041021"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제8635호, 2007. 8. 3.&gt;</span> </a> <a class="nun" onclick="javascript:fncArLawPop('자본시장과 금융투자업에 관한 법률', '20070803', '08635');" href="#AJAX"> <span class="sfon">(자본시장과 금융투자업에 관한 법률) </span> </a> <a class="nun" onclick="javascript:arView('ar6041021','<법률 제8635호, 2007. 8. 3.>');return false;" href="#AJAX"> <img id="ar6041021MrBtn" style="vertical-align: middle;" alt="부칙 <법률 제8635호, 2007. 8. 3.>보기" src="/LSW/images/button/btn_more_bu.gif" /> </a> </p> 
+       <p class="pty3_dep1"><span class="bl">제1조 (시행일)</span> 이 법은 공포 후 1년 6개월이 경과한 날부터 시행한다. &lt;단서 생략&gt;</p>
+       <div id="ar6041021">
+        <p class="pty3_dep1"><span class="bl">제2조</span> 부터 제41조까지 생략</p>
+        <p class="pty3_dep1"><span class="bl">제42조 (다른 법률의 개정)</span> ① 부터 ㊲ 까지 생략</p>
+        <p class="pty3_dep2"> ㊳ 부동산 실권리자명의 등기에 관한 법률 일부를 다음과 같이 개정한다.</p>
+        <p class="pty3_dep2"> 제2조제1호다목 중 “신탁업법에 의한”을 “「자본시장과 금융투자업에 관한 법률」에 따른”으로 한다.</p>
+        <p class="pty3_dep2"> ㊴ 부터 &lt;67&gt; 까지 생략</p>
+        <p class="pty3_dep1"><span class="bl">제43조</span> 및 제44조 생략</p>
+       </div> 
+      </div> 
+      <a name="J6041023" id="J6041023"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <img id="ar6041023btn" style="vertical-align: middle;" alt="부칙<법률 제10203호, 2010. 3. 31.>조문목록 없음" src="/LSW/images/button/btn_dot.gif" /> <input name="arInf" id="chk6041023" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제10203호, 2010. 3. 31.>체크박스 " value="6041023" /> <a class="nun" onclick="javascript:arView('ar6041023','<법률 제10203호, 2010. 3. 31.>'); return false;" href="#AJAX"> <label for="chk6041023"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제10203호, 2010. 3. 31.&gt;</span> </a> </p> 
+       <p class="pty3_dep1">이 법은 공포한 날부터 시행한다.</p> 
+      </div> 
+      <a name="J6041025" id="J6041025"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <a class="nun" onclick="javascript:arView('ar6041025','<법률 제10682호,  2011. 5. 19.>'); return false;" href="#AJAX"> <img id="ar6041025btn" style="vertical-align: middle;" alt="부칙 <법률 제10682호,  2011. 5. 19.>조문목록 접기" src="/LSW/images/button/btn_cocl.gif" /> </a> <input name="arInf" id="chk6041025" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제10682호,  2011. 5. 19.>체크박스 " value="6041025" /> <a class="nun" onclick="javascript:arView('ar6041025','<법률 제10682호,  2011. 5. 19.>'); return false;" href="#AJAX"> <label for="chk6041025"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제10682호, 2011. 5. 19.&gt;</span> </a> <a class="nun" onclick="javascript:fncArLawPop('금융회사부실자산 등의 효율적 처리 및 한국자산관리공사의 설립에 관한 법률', '20110519', '10682');" href="#AJAX"> <span class="sfon">(금융회사부실자산 등의 효율적 처리 및 한국자산관리공사의 설립에 관한 법률) </span> </a> <a class="nun" onclick="javascript:arView('ar6041025','<법률 제10682호,  2011. 5. 19.>');return false;" href="#AJAX"> <img id="ar6041025MrBtn" style="vertical-align: middle;" alt="부칙 <법률 제10682호,  2011. 5. 19.>보기" src="/LSW/images/button/btn_more_bu.gif" /> </a> </p> 
+       <p class="pty3_dep1"><span class="bl">제1조(시행일)</span> 이 법은 공포한 날부터 시행한다.</p>
+       <div id="ar6041025">
+        <p class="pty3_dep1"><span class="bl">제2조(다른 법률의 개정)</span> ①부터 ⑪까지 생략</p>
+        <p class="pty3_dep2"> ⑫ 부동산 실권리자명의 등기에 관한 법률 일부를 다음과 같이 개정한다.</p>
+        <p class="pty3_dep2"> 제11조제2항제2호 본문 중 “「금융기관부실자산 등의 효율적 처리 및 한국자산관리공사의 설립에 관한 법률」”을 “「금융회사부실자산 등의 효율적 처리 및 한국자산관리공사의 설립에 관한 법률」”로 한다.</p>
+        <p class="pty3_dep2"> ⑬부터 ㉔까지 생략</p>
+        <p class="pty3_dep1"><span class="bl">제3조</span> 생략</p>
+       </div> 
+      </div> 
+      <a name="J6041027" id="J6041027"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <a class="nun" onclick="javascript:arView('ar6041027','<법률 제11884호, 2013. 7. 12.>'); return false;" href="#AJAX"> <img id="ar6041027btn" style="vertical-align: middle;" alt="부칙 <법률 제11884호, 2013. 7. 12.>조문목록 접기" src="/LSW/images/button/btn_cocl.gif" /> </a> <input name="arInf" id="chk6041027" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제11884호, 2013. 7. 12.>체크박스 " value="6041027" /> <a class="nun" onclick="javascript:arView('ar6041027','<법률 제11884호, 2013. 7. 12.>'); return false;" href="#AJAX"> <label for="chk6041027"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제11884호, 2013. 7. 12.&gt;</span> </a> <a class="nun" onclick="javascript:arView('ar6041027','<법률 제11884호, 2013. 7. 12.>');return false;" href="#AJAX"> <img id="ar6041027MrBtn" style="vertical-align: middle;" alt="부칙 <법률 제11884호, 2013. 7. 12.>보기" src="/LSW/images/button/btn_more_bu.gif" /> </a> </p> 
+       <p class="pty3_dep1"><span class="bl">제1조(시행일)</span> 이 법은 공포한 날부터 시행한다.</p>
+       <div id="ar6041027">
+        <p class="pty3_dep1"><span class="bl">제2조(종교단체에 대한 특례 규정의 적용례)</span> 제8조제3호의 개정규정은 이 법 시행 전에 종교단체의 명의로 그 산하 조직이 보유한 부동산에 관한 물권을 등기한 경우로서 조세 포탈, 강제집행의 면탈 또는 법령상 제한의 회피를 목적으로 하지 아니하는 경우에는 법률 제4944호 부동산실권리자명의등기에관한법률의 시행일로 소급하여 적용한다.</p>
+       </div> 
+      </div> 
+      <a name="J6041029" id="J6041029"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <a class="nun" onclick="javascript:arView('ar6041029','<법률 제11998호,  2013. 8. 6.>'); return false;" href="#AJAX"> <img id="ar6041029btn" style="vertical-align: middle;" alt="부칙 <법률 제11998호,  2013. 8. 6.>조문목록 접기" src="/LSW/images/button/btn_cocl.gif" /> </a> <input name="arInf" id="chk6041029" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제11998호,  2013. 8. 6.>체크박스 " value="6041029" /> <a class="nun" onclick="javascript:arView('ar6041029','<법률 제11998호,  2013. 8. 6.>'); return false;" href="#AJAX"> <label for="chk6041029"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제11998호, 2013. 8. 6.&gt;</span> </a> <a class="nun" onclick="javascript:fncArLawPop('지방세외수입금의 징수 등에 관한 법률', '20130806', '11998');" href="#AJAX"> <span class="sfon">(지방세외수입금의 징수 등에 관한 법률) </span> </a> <a class="nun" onclick="javascript:arView('ar6041029','<법률 제11998호,  2013. 8. 6.>');return false;" href="#AJAX"> <img id="ar6041029MrBtn" style="vertical-align: middle;" alt="부칙 <법률 제11998호,  2013. 8. 6.>보기" src="/LSW/images/button/btn_more_bu.gif" /> </a> </p> 
+       <p class="pty3_dep1"><span class="bl">제1조(시행일)</span> 이 법은 공포 후 1년이 경과한 날부터 시행한다.</p>
+       <div id="ar6041029">
+        <p class="pty3_dep1"><span class="bl">제2조</span> 생략</p>
+        <p class="pty3_dep1"><span class="bl">제3조(다른 법률의 개정)</span> ①부터 ㉔까지 생략</p>
+        <p class="pty3_dep2"> ㉕ 부동산 실권리자명의 등기에 관한 법률 일부를 다음과 같이 개정한다.</p>
+        <p class="pty3_dep2"> 제5조제6항 중 “지방세 체납처분의 예에 따라 징수한다”를 “「지방세외수입금의 징수 등에 관한 법률」에 따라 징수한다”로 한다.</p>
+        <p class="pty3_dep2"> ㉖부터 &lt;71&gt;까지 생략</p>
+       </div> 
+      </div> 
+      <a name="J6041031" id="J6041031"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <img id="ar6041031btn" style="vertical-align: middle;" alt="부칙<법률 제13713호, 2016. 1. 6.>조문목록 없음" src="/LSW/images/button/btn_dot.gif" /> <input name="arInf" id="chk6041031" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제13713호, 2016. 1. 6.>체크박스 " value="6041031" /> <a class="nun" onclick="javascript:arView('ar6041031','<법률 제13713호, 2016. 1. 6.>'); return false;" href="#AJAX"> <label for="chk6041031"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제13713호, 2016. 1. 6.&gt;</span> </a> </p> 
+       <p class="pty3_dep1">이 법은 공포 후 1년이 경과한 날부터 시행한다.</p> 
+      </div> 
+      <a name="J6041033" id="J6041033"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <a class="nun" onclick="javascript:arView('ar6041033','<법률 제16652호,  2019. 11. 26.>'); return false;" href="#AJAX"> <img id="ar6041033btn" style="vertical-align: middle;" alt="부칙 <법률 제16652호,  2019. 11. 26.>조문목록 접기" src="/LSW/images/button/btn_cocl.gif" /> </a> <input name="arInf" id="chk6041033" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제16652호,  2019. 11. 26.>체크박스 " value="6041033" /> <a class="nun" onclick="javascript:arView('ar6041033','<법률 제16652호,  2019. 11. 26.>'); return false;" href="#AJAX"> <label for="chk6041033"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제16652호, 2019. 11. 26.&gt;</span> </a> <a class="nun" onclick="javascript:fncArLawPop('한국자산관리공사 설립 등에 관한 법률', '20191126', '16652');" href="#AJAX"> <span class="sfon">(한국자산관리공사 설립 등에 관한 법률) </span> </a> <a class="nun" onclick="javascript:arView('ar6041033','<법률 제16652호,  2019. 11. 26.>');return false;" href="#AJAX"> <img id="ar6041033MrBtn" style="vertical-align: middle;" alt="부칙 <법률 제16652호,  2019. 11. 26.>보기" src="/LSW/images/button/btn_more_bu.gif" /> </a> </p> 
+       <p class="pty3_dep1"><span class="bl">제1조(시행일)</span> 이 법은 공포한 날부터 시행한다.</p>
+       <div id="ar6041033">
+        <p class="pty3_dep1"><span class="bl">제2조(다른 법률의 개정)</span> ①부터 ⑯까지 생략</p>
+        <p class="pty3_dep2"> ⑰ 부동산 실권리자명의 등기에 관한 법률 일부를 다음과 같이 개정한다.</p>
+        <p class="pty3_dep2"> 제11조제2항제2호 본문 중 “「금융회사부실자산 등의 효율적 처리 및 한국자산관리공사의 설립에 관한 법률」”을 “「한국자산관리공사 설립 등에 관한 법률」”로 한다.</p>
+        <p class="pty3_dep2"> ⑱부터 ㊵까지 생략</p>
+        <p class="pty3_dep1"><span class="bl">제3조</span> 생략</p>
+       </div> 
+      </div> 
+      <a name="J6041035" id="J6041035"></a> 
+      <div class="pgroup"> 
+       <p class="pty3" style="margin-bottom: -1px;"> <a class="nun" onclick="javascript:arView('ar6041035','<법률 제17091호,  2020. 3. 24.>'); return false;" href="#AJAX"> <img id="ar6041035btn" style="vertical-align: middle;" alt="부칙 <법률 제17091호,  2020. 3. 24.>조문목록 접기" src="/LSW/images/button/btn_cocl.gif" /> </a> <input name="arInf" id="chk6041035" style="vertical-align: middle;" type="checkbox" alt="부칙 <법률 제17091호,  2020. 3. 24.>체크박스 " value="6041035" /> <a class="nun" onclick="javascript:arView('ar6041035','<법률 제17091호,  2020. 3. 24.>'); return false;" href="#AJAX"> <label for="chk6041035"> <span class="bl"> 부      칙</span> </label> <span class="sfon">&lt;법률 제17091호, 2020. 3. 24.&gt;</span> </a> <a class="nun" onclick="javascript:fncArLawPop('지방행정제재ㆍ부과금의 징수 등에 관한 법률', '20200324', '17091');" href="#AJAX"> <span class="sfon">(지방행정제재ㆍ부과금의 징수 등에 관한 법률) </span> </a> <a class="nun" onclick="javascript:arView('ar6041035','<법률 제17091호,  2020. 3. 24.>');return false;" href="#AJAX"> <img id="ar6041035MrBtn" style="vertical-align: middle;" alt="부칙 <법률 제17091호,  2020. 3. 24.>보기" src="/LSW/images/button/btn_more_bu.gif" /> </a> </p> 
+       <p class="pty3_dep1"><span class="bl">제1조(시행일)</span> 이 법은 공포한 날부터 시행한다. &lt;단서 생략&gt;</p>
+       <div id="ar6041035">
+        <p class="pty3_dep1"><span class="bl">제2조</span> 및 제3조 생략</p>
+        <p class="pty3_dep1"><span class="bl">제4조(다른 법률의 개정)</span> ①부터 ㊳까지 생략</p>
+        <p class="pty3_dep2"> ㊴ 부동산 실권리자명의 등기에 관한 법률 일부를 다음과 같이 개정한다.</p>
+        <p class="pty3_dep2"> 제5조제6항 중 “「지방세외수입금의 징수 등에 관한 법률」”을 “「지방행정제재ㆍ부과금의 징수 등에 관한 법률」”로 한다.</p>
+        <p class="pty3_dep2"> ㊵부터 &lt;102&gt;까지 생략</p>
+        <p class="pty3_dep1"><span class="bl">제5조</span> 생략</p>
+       </div> 
+      </div> 
+     </div> 
+     <!-- 부칙 영역 끝 --> 
+     <!-- 별표 서식 시작 --> 
+     <!-- 별표 서식 끝 --> 
+    </div> 
+   </div> 
+  </div> 
+ </body>
+</html>

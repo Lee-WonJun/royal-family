@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "as_of_date_kst": "2026-10-09",
+  "collected_at_utc": "2026-10-09T02:55:24.2558031+00:00",
+  "statutes": [
+    {
+      "id": "L05",
+      "name": "법인 아닌 사단ㆍ재단 및 외국인의 부동산등기용 등록번호 부여절차에 관한 규정",
+      "topic": "법인 아닌 사단의 등기용 등록번호",
+      "articles": [
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "source_type": "statute",
+      "official_url": "https://www.law.go.kr/법령/%EB%B2%95%EC%9D%B8%20%EC%95%84%EB%8B%8C%20%EC%82%AC%EB%8B%A8%E3%86%8D%EC%9E%AC%EB%8B%A8%20%EB%B0%8F%20%EC%99%B8%EA%B5%AD%EC%9D%B8%EC%9D%98%20%EB%B6%80%EB%8F%99%EC%82%B0%EB%93%B1%EA%B8%B0%EC%9A%A9%20%EB%93%B1%EB%A1%9D%EB%B2%88%ED%98%B8%20%EB%B6%80%EC%97%AC%EC%A0%88%EC%B0%A8%EC%97%90%20%EA%B4%80%ED%95%9C%20%EA%B7%9C%EC%A0%95",
+      "version_url": "https://www.law.go.kr/LSW//lsInfoP.do?lsiSeq=246561&chrClsCd=010202&urlMode=lsInfoP&efYd=20230101&ancYnChk=0",
+      "body_url": "https://www.law.go.kr/LSW/lsInfoR.do?lsiSeq=246561&efYd=20230101&chrClsCd=010202",
+      "lsi_seq": "246561",
+      "effective_date": "2023-01-01",
+      "version_header": "[시행 2023. 1. 1.] [대통령령 제33114호, 2022. 12. 27., 타법개정]",
+      "html_path": "statutes/L05-body.html",
+      "html_sha256": "0de55e5b5fcd58528859d689ae1330b9cc8e18c0685c1924b54cb714a9c7934f",
+      "landing_path": "statutes/L05-landing.html",
+      "landing_sha256": "ce1b372e87d22b49b2bf2348d6872db9f1f62499236921872f917afd519a82bd",
+      "text_path": "statutes/L05-body.txt",
+      "text_sha256": "1c0ebe85e711ec23bf2d7475cf98ac29daf44082cc9169e613dbc755860ae633",
+      "retrieval_status": "official_body_captured"
+    },
+    {
+      "id": "L22",
+      "name": "법인 아닌 사단ㆍ재단 및 외국인의 부동산등기용 등록번호 부여절차에 관한 규정 시행규칙",
+      "topic": "등록번호 신청과 변경 및 증명서 서식",
+      "articles": [
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "source_type": "statute",
+      "official_url": "https://www.law.go.kr/법령/%EB%B2%95%EC%9D%B8%20%EC%95%84%EB%8B%8C%20%EC%82%AC%EB%8B%A8%E3%86%8D%EC%9E%AC%EB%8B%A8%20%EB%B0%8F%20%EC%99%B8%EA%B5%AD%EC%9D%B8%EC%9D%98%20%EB%B6%80%EB%8F%99%EC%82%B0%EB%93%B1%EA%B8%B0%EC%9A%A9%20%EB%93%B1%EB%A1%9D%EB%B2%88%ED%98%B8%20%EB%B6%80%EC%97%AC%EC%A0%88%EC%B0%A8%EC%97%90%20%EA%B4%80%ED%95%9C%20%EA%B7%9C%EC%A0%95%20%EC%8B%9C%ED%96%89%EA%B7%9C%EC%B9%99",
+      "version_url": "https://www.law.go.kr/LSW//lsInfoP.do?lsiSeq=247035&chrClsCd=010202&urlMode=lsInfoP&efYd=20221227&ancYnChk=0",
+      "body_url": "https://www.law.go.kr/LSW/lsInfoR.do?lsiSeq=247035&efYd=20221227&chrClsCd=010202",
+      "lsi_seq": "247035",
+      "effective_date": "2022-12-27",
+      "version_header": "[시행 2022. 12. 27.] [법무부령 제1041호, 2022. 12. 27., 일부개정]",
+      "html_path": "statutes/L22-body.html",
+      "html_sha256": "558355cc384057168ea9ee339da336983302315d2369b3cc62c3297d28cfce68",
+      "landing_path": "statutes/L22-landing.html",
+      "landing_sha256": "ba9ed5e3704946e81c85bd27ce98215354c73ecfd26a75099687a42d5edfa2f4",
+      "text_path": "statutes/L22-body.txt",
+      "text_sha256": "19b0a93d301e79c17bdf4707b12a690120c0dbf701f8d18f2f05c7ccd4a2361a",
+      "retrieval_status": "official_body_captured"
+    }
+  ],
+  "precedents": [
+    {
+      "id": "P07",
+      "case_number": "2005다56315",
+      "name": "소유권말소등기",
+      "topic": "정기총회 소집통지 예외",
+      "source_type": "precedent",
+      "court": "대법원",
+      "decision_date": "2007-05-11",
+      "decision_header": "[대법원 2007. 5. 11. 선고 2005다56315 판결]",
+      "official_url": "https://www.law.go.kr/LSW/precInfoP.do?precSeq=68656",
+      "retrieved_url": "https://www.law.go.kr/LSW/precInfoP.do?evtNo=2005%EB%8B%A456315",
+      "prec_seq": "68656",
+      "html_path": "precedents/P07.html",
+      "html_sha256": "9c04c937f99601ee5fbe70c2a37f1f6039eb6140d35822376b8ef58b68d20c26",
+      "text_path": "precedents/P07.txt",
+      "text_sha256": "550da4b449cf536c2189e423f89e5ed19cd1cc26d45279eee5c0e57a5b2de293",
+      "retrieval_status": "official_full_published_body_captured"
+    },
+    {
+      "id": "P24",
+      "case_number": "2013다17292",
+      "name": "분묘철거등",
+      "topic": "분묘기지권의 시효취득과 2001년 시행법",
+      "source_type": "precedent",
+      "court": "대법원",
+      "decision_date": "2017-01-19",
+      "decision_header": "[대법원 2017. 1. 19. 선고 2013다17292 전원합의체 판결]",
+      "official_url": "https://www.law.go.kr/LSW/precInfoP.do?precSeq=215857",
+      "retrieved_url": "https://www.law.go.kr/LSW/precInfoP.do?evtNo=2013%EB%8B%A417292",
+      "prec_seq": "215857",
+      "html_path": "precedents/P24.html",
+      "html_sha256": "12b20c89b553e03c622d0d023bf47d97c4337d4fd37059af64059280967f2da7",
+      "text_path": "precedents/P24.txt",
+      "text_sha256": "a59e44567b38f7b90f7da28ea4a1e1d6782de148b660a062dc94b21fc9c745f4",
+      "retrieval_status": "official_full_published_body_captured"
+    }
+  ],
+  "errors": [
+    {
+      "message": "The official case header does not match the requested case.",
+      "id": "P25"
+    }
+  ]
+}

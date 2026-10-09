@@ -1,0 +1,8 @@
+*.md text eol=lf
+*.json text eol=lf
+*.ps1 text eol=lf
+.gitattributes text eol=lf
+
+# Preserve captured response and extracted text bytes across Windows and Linux checkouts.
+sources/** -text
+sources/**/*.html -diff

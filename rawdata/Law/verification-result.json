@@ -1,0 +1,12 @@
+{
+  "as_of_date_kst": "2026-10-09",
+  "verification_kind": "source_and_document_validation",
+  "statutes": 22,
+  "selected_articles": 108,
+  "precedents": 25,
+  "sha256_checks": 116,
+  "local_link_checks": 215,
+  "external_network_calls": 0,
+  "issues": [],
+  "result": "passed"
+}
