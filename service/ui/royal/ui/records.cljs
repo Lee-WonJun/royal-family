@@ -110,7 +110,9 @@
                          ($ :div {:class "section-label"} ($ :strong "확인할 항목") ($ badge {:tone "amber"} (count (:unconfirmed version))))
                          (for [text (:unconfirmed version)] ($ :p {:key text} text))
                          ($ :div {:class "callout-actions"}
-                            (when (:transcript document) ($ :button {:class "source-link" :on-click #(set-tab :original)} "원문 02:34" ($ icon {:name :arrow :size 15})))
+                            (when (:transcript document) ($ :button {:class "source-link" :on-click #(set-tab :original)}
+                                                           (if (and (:file_id document) (seq (:segments document))) "전사·녹음 확인" "원문 확인")
+                                                           ($ icon {:name :arrow :size 15})))
                             (when-not historical? ($ :button {:class "text-button" :on-click #(open-dialog :resolve document)} "확인 기록")))))
                     (when (:review_note version) ($ :div {:class "review-note"} ($ :strong "검토 기록") ($ :p (:review_note version)))))))
             ($ :footer {:class "record-footer"}
