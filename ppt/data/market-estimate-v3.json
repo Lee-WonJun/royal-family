@@ -1,0 +1,38 @@
+{
+  "as_of": "2026-10-09",
+  "currency": "KRW",
+  "purpose": "발표용 시장 추정. 명문가의 확정 요금이나 실제 매출을 뜻하지 않음.",
+  "registered_clans": {
+    "value": 237071,
+    "basis_date": "2024-06",
+    "source": "https://ebook.kabl.kr/registrationforum/202409/11/",
+    "source_detail": "2024년 제1회 등기법포럼 발표자료, 인쇄면 9쪽, 김영대. 국토부 부동산종합공부시스템 조회 결과 인용.",
+    "boundary": "부동산등기용 등록 종중. 모든 자연발생 종중이나 유료 구매자를 센 통계가 아님."
+  },
+  "subscription_assumption": {
+    "annual_fee_per_clan": 500000,
+    "vat_included": false,
+    "benchmark": "https://fundservice.zuzu.network/fund-pricing/",
+    "benchmark_detail": "ZUZU Fund Service의 20억 원 미만 투자조합 운영·관리 공개 요금: 연 500000원, VAT 별도, 2026-10-09 브라우저 확인.",
+    "boundary": "다른 고객군의 인접 서비스 요금을 계산 기준으로 참고. 종중의 지불 의사나 명문가의 확정 판매 가격은 검증 전. 전문가 수임료와 일회성 설립비 제외."
+  },
+  "TAM": {"clans":237071,"annual_subscription_revenue_won":118535500000,"display_eok":1185.36,"definition":"확인 가능한 국내 부동산등기용 등록 종중을 잠재 고객 모수로 삼은 연간 구독매출 환산."},
+  "SAM": {"clans":237071,"annual_subscription_revenue_won":118535500000,"display_eok":1185.36,"short_label":"전국 대상, TAM과 동일","definition":"전국 종중을 대상으로 하는 초안. 설립 준비, 운영 기록, 동의와 법률 확인은 재산 종류와 무관하게 제공하므로 확인 가능한 등록 종중 모수를 TAM과 동일하게 사용. 별도 지역 제한이나 검증된 수요 비율이 없어 임의 축소하지 않음. 실구매 수요와 모든 자연발생 종중을 센 통계가 아님."},
+  "SOM": {"horizon_years":3,"penetration_assumption":0.01,"clans":2371,"annual_run_rate_won":1185500000,"display_eok":11.86},
+  "SOM_scenarios": [
+    {"penetration_assumption":0.005,"clans":1185,"annual_run_rate_won":592500000,"display_eok":5.93},
+    {"penetration_assumption":0.01,"clans":2371,"annual_run_rate_won":1185500000,"display_eok":11.86},
+    {"penetration_assumption":0.02,"clans":4741,"annual_run_rate_won":2370500000,"display_eok":23.71}
+  ],
+  "rounding": "SOM 고객 수는 SAM x 확보율을 정수 반올림. 억원 표시는 원 금액에서 0.01억원 단위 반올림.",
+  "market_boundary": "전국 대상 초안에서 TAM과 SAM은 같은 등록 종중 모수를 사용. 전체가 연 구독료를 낼 때의 연간 매출 상한 환산이며 구독료, 확보율과 3년 기간은 검증 전 사업 가정. SOM은 3년 내 확보율 가정의 도달 시점 연환산 매출. 현재 매출, 실제 구매 고객 수, 3년 누적 매출이나 토지 자산가치가 아님.",
+  "precedent_search": {
+    "displayed_entries":1416,
+    "date":"2026-10-09",
+    "query":"종중",
+    "scope":"국가법령정보센터 판례 검색, 전체 검색, 기간 제한 없음",
+    "source":"https://www.law.go.kr/precSc.do?menuId=7&query=%EC%A2%85%EC%A4%91",
+    "evidence":"evidence/precedent-search-20261009.jpg",
+    "boundary":"전국 연간 분쟁 건수나 고유 사건 수가 아닌 공개 판례 검색 결과 수. 심급·요약 등 중복 항목과 조세 사건이 포함될 수 있음."
+  }
+}

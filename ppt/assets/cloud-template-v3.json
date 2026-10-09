@@ -1,0 +1,230 @@
+{
+  "referencePath": "C:\\Users\\dldnj\\OneDrive\\문서\\Premium Cloud Widescreen Multicolored.pptx",
+  "referenceSha256": "b8b4feda988b4e16ed9424d35efa57b4d9d1b5933ac102ade21be0da7399db26",
+  "referenceSlideSizeEmu": [
+    9144000,
+    5143500
+  ],
+  "palette": {
+    "blue": "#6BBADD",
+    "gold": "#EEAD2A",
+    "green": "#ABCA48",
+    "red": "#D05258",
+    "teal": "#8DCACD",
+    "text": "#626262",
+    "muted": "#A2A2A2"
+  },
+  "circle": {
+    "id": "53",
+    "name": "Oval 52",
+    "type": 1,
+    "children": [],
+    "levelsStyles": [],
+    "citations": [],
+    "shape": {
+      "geometry": 35,
+      "fill": {
+        "type": 1,
+        "color": {
+          "type": 2,
+          "value": "tx2"
+        },
+        "gradientStops": [],
+        "pictureEffects": []
+      },
+      "line": {
+        "cap": 1,
+        "join": 1,
+        "widthEmu": 28575,
+        "fill": {
+          "type": 1,
+          "color": {
+            "type": 2,
+            "value": "accent1"
+          },
+          "gradientStops": [],
+          "pictureEffects": []
+        },
+        "style": 1,
+        "compound": 1
+      },
+      "adjustmentList": [],
+      "customPaths": [],
+      "customGeometryGuides": []
+    },
+    "connector": {
+      "fromElementId": "",
+      "fromIdx": 0,
+      "toElementId": "",
+      "toIdx": 0,
+      "lineStyle": {
+        "head": {
+          "type": 1,
+          "width": 2,
+          "length": 2
+        },
+        "tail": {
+          "type": 1,
+          "width": 2,
+          "length": 2
+        }
+      }
+    },
+    "creationId": "{8FE34D8D-96E3-408C-B06F-D7DB1DBEEFD1}",
+    "effects": [],
+    "textStyle": {
+      "anchor": 1,
+      "vertical": 1,
+      "bottomInset": 45720,
+      "leftInset": 91440,
+      "rightInset": 91440,
+      "topInset": 45720,
+      "wrap": 2
+    },
+    "paragraphs": [
+      {
+        "id": "",
+        "runs": [],
+        "textStyle": {
+          "alignment": 1
+        },
+        "inlineNodes": [],
+        "paragraphStyle": {
+          "bulletCharacter": "",
+          "marginLeft": 0,
+          "indent": 0,
+          "lineSpacingPercent": 100000,
+          "tabStops": [],
+          "bulletTypefaceFollowsText": true,
+          "bulletColorFollowsText": true,
+          "bulletSizeFollowsText": true,
+          "marginRight": 0,
+          "spaceBeforePercent": 0,
+          "spaceAfterPercent": 0,
+          "defaultTabSize": 914400
+        },
+        "endParagraphTextStyle": {
+          "bold": false,
+          "italic": false,
+          "fontSize": 3200,
+          "fill": {
+            "type": 1,
+            "color": {
+              "type": 2,
+              "value": "bg1"
+            },
+            "gradientStops": [],
+            "pictureEffects": []
+          },
+          "underline": "none",
+          "outline": {
+            "style": 0,
+            "fill": {
+              "type": 0,
+              "gradientStops": [],
+              "pictureEffects": []
+            }
+          },
+          "capitalization": 1,
+          "baseline": 0,
+          "strike": 1
+        }
+      }
+    ],
+    "bbox": {
+      "xEmu": 838320,
+      "yEmu": 1382197,
+      "widthEmu": 1295280,
+      "heightEmu": 1295280
+    }
+  },
+  "footer": {
+    "id": "15",
+    "name": "Rectangle 14",
+    "type": 1,
+    "children": [],
+    "levelsStyles": [],
+    "citations": [],
+    "lineReference": {
+      "index": "1",
+      "color": {
+        "type": 2,
+        "value": "accent1"
+      }
+    },
+    "fillReference": {
+      "index": "3",
+      "color": {
+        "type": 2,
+        "value": "accent1"
+      }
+    },
+    "effectReference": {
+      "index": "2",
+      "color": {
+        "type": 2,
+        "value": "accent1"
+      }
+    },
+    "fontReference": {
+      "index": "minor",
+      "color": {
+        "type": 2,
+        "value": "lt1"
+      }
+    },
+    "shape": {
+      "geometry": 5,
+      "fill": {
+        "type": 1,
+        "color": {
+          "type": 1,
+          "value": "A6A6A6",
+          "transform": {
+            "alpha": 30196
+          }
+        },
+        "gradientStops": [],
+        "pictureEffects": []
+      },
+      "line": {
+        "fill": {
+          "type": 0,
+          "gradientStops": [],
+          "pictureEffects": []
+        },
+        "style": 0
+      },
+      "adjustmentList": [],
+      "customPaths": [],
+      "customGeometryGuides": []
+    },
+    "creationId": "{B9518634-BD4D-4CBA-8975-F22D0DA63356}",
+    "effects": [],
+    "textStyle": {
+      "anchor": 2
+    },
+    "paragraphs": [
+      {
+        "id": "",
+        "runs": [],
+        "textStyle": {
+          "alignment": 2
+        },
+        "inlineNodes": [],
+        "paragraphStyle": {
+          "tabStops": []
+        },
+        "endParagraphTextStyle": {
+          "typeface": "Lato Light"
+        }
+      }
+    ],
+    "bbox": {
+      "xEmu": 0,
+      "yEmu": 4823460,
+      "widthEmu": 9144000,
+      "heightEmu": 320040
+    }
+  }
+}
