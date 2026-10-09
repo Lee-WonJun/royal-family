@@ -1,0 +1,121 @@
+(ns royal.ui.dialogs (:require [uix.core :as uix :refer [defui $]] [clojure.string :as str]
+                               [royal.ui.components :as c :refer [button badge field val-of find-id latest]]))
+
+(def titles {:member-add "종원 등록" :relation-add "가계 관계 연결" :relation-remove "관계 정정"
+             :document-create "새 문서" :resolve "확인 기록" :review-note "검토 의견"
+             :transaction "거래 등록" :consent-create "동의 요청" :meeting-create "총회 준비"
+             :asset-snapshot "후속 자료 등록" :consultation "상담 준비" :proxy "위임 기록" :reset "초기 데이터로 되돌리기"})
+(defn initial-form [kind item data]
+  (merge {:title "" :body "" :note "" :name "" :role "종원" :source "" :reason ""
+          :parent_id "" :child_id (:id item) :direction "income" :amount "" :date "2026-10-09"
+          :document_id "doc02" :deadline "2026-10-24" :place "" :agenda "" :question ""
+          :targets (set (map :id (get-in data [:organization :members]))) :selected_docs #{"doc01"}}
+         (case kind :asset-snapshot (select-keys item [:owner_name :owner_type :area_m2 :land_category])
+               :document-create (select-keys item [:title :body]) {})))
+(defui form-dialog [{:keys [kind item data command on-close]}]
+  (let [[form set-form] (uix/use-state #(initial-form kind item data))
+        [busy set-busy] (uix/use-state false)
+        set-value (fn [k v] (set-form #(assoc % k v)))
+        input (fn [k label & [type]] ($ field {:label label} ($ :input {:type (or type "text") :required true :value (get form k "") :on-change #(set-value k (val-of %))})))
+        textarea (fn [k label rows] ($ field {:label label} ($ :textarea {:rows rows :value (get form k "") :on-change #(set-value k (val-of %))})))
+        records (get-in data [:documents :records]) members (get-in data [:organization :members])
+        doc (find-id records (:document_id form))
+        run (fn [op payload]
+              (set-busy true)
+              (-> (command op payload (if (= op "reset") "초기화했습니다. 알림 구독은 다시 설정해 주세요." "저장했습니다."))
+                  (.then (fn [ok] (when ok (on-close)))) (.finally #(set-busy false))))
+        submit (fn [e] (.preventDefault e)
+                 (case kind
+                   :member-add (run "member.add" (select-keys form [:name :role]))
+                   :relation-add (run "relation.add" (select-keys form [:parent_id :child_id :source]))
+                   :relation-remove (run "relation.remove" {:id (:id item) :reason (:reason form)})
+                   :document-create (run "document.create" {:title (:title form) :body (:body form) :kind "문서"})
+                   :resolve (run "document.review" {:id (:id item) :expected_version (:version item) :action "resolve" :note (:note form)})
+                   :review-note (run "document.review" {:id (:id item) :expected_version (:version item) :action "reject" :note (:note form)})
+                   :transaction (run "transaction.add" (cond-> {:title (:title form) :direction (:direction form) :amount (js/Number (:amount form)) :date (:date form)}
+                                                         (not (str/blank? (:document_id form))) (assoc :document_id (:document_id form))))
+                   :consent-create (run "consent.create" {:title (:title form) :document_id (:id doc) :document_version (:version doc)
+                                                         :targets (vec (:targets form)) :deadline (str (:deadline form) "T14:59:59Z")})
+                   :meeting-create (run "meeting.create" (select-keys form [:title :date :place :agenda]))
+                   :asset-snapshot (run "asset.snapshot" (merge (select-keys item [:asset_id :parcel :source_kind])
+                                                                (select-keys form [:owner_name :owner_type :land_category]) {:area_m2 (js/Number (:area_m2 form))}))
+                   :consultation (run "consultation.prepare" {:expert_id (:id item) :question (:question form)
+                                                              :documents (mapv #(hash-map :document_id (:id %) :version (:version %)) (filter #(contains? (:selected_docs form) (:id %)) records))})
+                   :proxy (run "meeting.record" {:id (get-in item [:meeting :id]) :expected_version (get-in item [:meeting :version])
+                                                 :member_id (get-in item [:member :id]) :field "attendance" :value "proxy" :note (:note form)})
+                   :reset (run "reset" {}) nil))
+        document-select ($ field {:label "연결 문서"} ($ :select {:value (:document_id form) :on-change #(set-value :document_id (val-of %))}
+                                                     (when (= kind :transaction) ($ :option {:value ""} "미등록"))
+                                                     (for [d records] ($ :option {:key (:id d) :value (:id d)} (str (:title d) " · v" (:version d))))))]
+    ($ c/dialog {:title (titles kind) :on-close on-close :class (when (= kind :document-create) "wide-dialog")}
+       ($ :form {:on-submit submit}
+          (case kind
+            :member-add ($ :<> (input :name "이름") ($ field {:label "직책"} ($ :select {:value (:role form) :on-change #(set-value :role (val-of %))}
+                                                                                       (for [r ["종원" "회장" "총무" "검토자"]] ($ :option {:key r} r))))
+                           ($ :p {:class "muted small"} "시연 명부에 등록합니다. 가입·본인 인증과 별개입니다."))
+            :relation-add ($ :<>
+                             (for [[k label] [[:parent_id "상위 종원"] [:child_id "하위 종원"]]]
+                               ($ field {:key (name k) :label label} ($ :select {:required true :value (or (get form k) "") :on-change #(set-value k (val-of %))}
+                                                                      ($ :option {:value ""} "선택")
+                                                                      (for [m members] ($ :option {:key (:id m) :value (:id m)} (:name m))))))
+                             (textarea :source "관계 근거" 3) ($ :p {:class "muted small"} "시연 관계로 저장됩니다. 직책·권한은 바뀌지 않습니다."))
+            :relation-remove ($ :<> ($ :p "연결을 해제하고 정정 사유를 남깁니다.") (textarea :reason "정정 사유" 3))
+            :document-create ($ :<> (input :title "문서 제목") (textarea :body "내용" 12))
+            :resolve ($ :<> ($ :p {:class "muted"} (str/join ", " (:unconfirmed (latest item)))) (textarea :note "확인한 내용·근거" 5))
+            :review-note (textarea :note "보완할 내용" 5)
+            :transaction ($ :<>
+                            ($ :div {:class "form-grid"} (input :date "거래일" "date")
+                               ($ field {:label "구분"} ($ :select {:value (:direction form) :on-change #(set-value :direction (val-of %))}
+                                                           ($ :option {:value "income"} "수입") ($ :option {:value "expense"} "지출"))))
+                            (input :title "거래 내용") (input :amount "금액(원)" "number") document-select)
+            :consent-create ($ :<> (input :title "요청 제목") document-select (input :deadline "응답 기한" "date")
+                               ($ :fieldset {:class "target-list"} ($ :legend "대상 종원")
+                                  (for [m members :let [id (:id m)]]
+                                    ($ :label {:key id} ($ :input {:type "checkbox" :checked (contains? (:targets form) id)
+                                                                  :on-change #(set-value :targets ((if (contains? (:targets form) id) disj conj) (:targets form) id))}) (:name m))))
+                               ($ :p {:class "muted small"} "선택한 문서 버전에 대한 시연 요청입니다."))
+            :meeting-create ($ :<> (input :title "총회명") (input :date "일시" "datetime-local") (input :place "장소") (textarea :agenda "안건" 4))
+            :asset-snapshot ($ :<> ($ badge "시연 후속 자료") (input :owner_name "소유자 표시") (input :area_m2 "면적(㎡)" "number")
+                               ($ :div {:class "form-grid"} (input :owner_type "소유구분") (input :land_category "지목"))
+                               ($ button {:on-click #(set-value :owner_name "시연용 변경 종중")} "변경 예시 넣기"))
+            :consultation ($ :<> ($ :div {:class "section-label"} ($ :strong (:name item)) ($ badge "가상 후보"))
+                             (textarea :question "상담 질문" 5)
+                             ($ :fieldset {:class "target-list"} ($ :legend "포함할 자료")
+                                (for [d records :let [id (:id d)]]
+                                  ($ :label {:key id} ($ :input {:type "checkbox" :checked (contains? (:selected_docs form) id)
+                                                                :on-change #(set-value :selected_docs ((if (contains? (:selected_docs form) id) disj conj) (:selected_docs form) id))})
+                                     (str (:title d) " · v" (:version d)))))
+                             ($ :p {:class "muted small"} "선택 자료만 준비 기록에 포함합니다. 외부로 전달하지 않습니다."))
+            :proxy ($ :<> ($ :p (get-in item [:member :name])) (textarea :note "위임 근거·확인 내용" 4) ($ :p {:class "muted small"} "시연 위임 기록입니다."))
+            :reset ($ :<> ($ :p "시연 문서·거래·응답을 지우고 초기 데이터로 되돌립니다.")
+                       ($ :p {:class "muted"} "진행 중 작업은 중지되며 실제 호출 설정은 모두 꺼집니다.")) nil)
+          ($ :div {:class "dialog-actions"}
+             (when (= kind :document-create)
+               ($ button {:disabled (or busy (str/blank? (:title form)))
+                          :on-click #(run "ai.mock" {:feature "draft" :title (:title form) :instructions (:body form) :evidence [{:document_id "doc03" :version 1}]})} "예시 초안 만들기"))
+             ($ button {:on-click on-close :disabled busy} "취소")
+             ($ button {:type "submit" :variant (if (= kind :reset) "danger" "primary") :disabled busy}
+                (if busy "저장 중" (case kind :reset "초기화" :consent-create "요청 저장" :consultation "준비 저장" "저장"))))))))
+
+(def features [["stt" "음성 전사"] ["extract" "문서 추출"] ["search" "근거 검색"] ["draft" "문서 작성"]
+               ["legal" "법률·문제 확인"] ["recommend" "전문가 추천"] ["land" "토지 조회"] ["notify" "외부 알림"]
+               ["consult" "전문가 접수"] ["signature" "전자서명"] ["finance" "금융 거래"] ["events" "ChatGPT 알림"]])
+(defui settings-panel [{:keys [data on-close open-dialog]}]
+  ($ c/dialog {:title "설정" :on-close on-close :class "settings-dialog"}
+     ($ :div {:class "section-label"} ($ :h3 "실제 호출") ($ badge "모두 예시 모드"))
+     ($ :p {:class "muted small"} "연결된 기능만 실제 호출로 바꿀 수 있습니다.")
+     ($ :div {:class "settings-list"}
+        (for [[id label] features]
+          ($ :div {:key id :class "setting-row"}
+             ($ :span label) ($ :span {:class "muted small"} "미연결")
+             ($ :button {:class "switch" :type "button" :role "switch" :aria-checked false :aria-label (str label " 실제 호출")
+                         :disabled true :title "실제 연결 준비 필요"} ($ :span)))))
+     ($ :section {:class "settings-section"}
+        ($ :h3 "호출 기록")
+        (if (seq (:jobs data))
+          (for [job (take 5 (reverse (:jobs data)))]
+            ($ :div {:key (:id job) :class "setting-row"} ($ :span (get (into {} features) (:feature job)))
+               ($ badge "예시") ($ c/status {:value (:status job)})))
+          ($ :p {:class "muted small"} "아직 호출 기록이 없습니다.")))
+     ($ :section {:class "settings-section"} ($ :h3 "시연 데이터")
+        ($ button {:icon-name :refresh :on-click #(open-dialog :reset)} "초기 데이터로 되돌리기"))))
