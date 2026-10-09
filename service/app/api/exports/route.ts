@@ -10,6 +10,7 @@ const fontBytes = Uint8Array.from(atob(fontUrl.slice(fontUrl.indexOf(',') + 1)),
 const response = (entry: any) => ({ ok: true, id: entry.id, pages: entry.pages, sha256: entry.sha256, url: `/api/exports?id=${encodeURIComponent(entry.id)}` });
 
 export async function POST(request: Request) {
+  let storedKey: string | undefined, exportGeneration: number | undefined;
   try {
     requireSameOrigin(request);
     const input = schema.parse(await request.json());
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
     if ((await readState()).generation !== state.generation) throw new AppError('stale_generation', '초기화 전 내보내기입니다.', 409);
     const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new Uint8Array(rendered.bytes).buffer))].map(b => b.toString(16).padStart(2, '0')).join('');
     const key = `${workspaceId}/${state.generation}/exports/${hash}.pdf`;
+    storedKey = key; exportGeneration = state.generation;
     await env.BUCKET.put(key, rendered.bytes, { httpMetadata: { contentType: 'application/pdf' }, customMetadata: { sha256: hash, generation: String(state.generation) } });
     const id = `export-${input.idempotency_key}`;
     const entry = { request_key: input.idempotency_key, request_signature: signature, documents: input.documents,
@@ -50,6 +52,8 @@ export async function POST(request: Request) {
     await runInternal('export.record', entry, state.generation, `export:${input.idempotency_key}`, id);
     return json(response({ ...entry, id }));
   } catch (error) {
+    if (storedKey && exportGeneration && (await readState().catch(() => null))?.generation > exportGeneration)
+      await env.BUCKET?.delete(storedKey).catch(() => undefined);
     if (error instanceof z.ZodError) return errorResponse(new AppError('invalid_input', '내보낼 문서와 버전을 확인해 주세요.'));
     return errorResponse(error);
   }

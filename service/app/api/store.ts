@@ -8,7 +8,8 @@ export class AppError extends Error {
 }
 export const workspaceId = "demo_a";
 export function readiness(): Record<string, boolean> {
-  return Object.fromEntries(aiFeatures.map(feature => [feature, !!env.OPENAI_API_KEY && env.RF_FORCE_MOCK !== '1']));
+  return { ...Object.fromEntries(aiFeatures.map(feature => [feature, !!env.OPENAI_API_KEY && env.RF_FORCE_MOCK !== '1'])),
+    events: !!env.MCP_ENCRYPTION_KEY && env.RF_FORCE_MOCK !== '1' };
 }
 export function context() {
   return { clan_id: workspaceId, principal_id: "demo_admin", role: "admin",

@@ -166,9 +166,11 @@
                             (.finally #(finish id)))) (js/Promise.resolve false))))
         active-jobs (filter ai/active? (:jobs data))
         has-jobs (boolean (seq active-jobs))
+        has-work (or has-jobs (some #(contains? #{"pending" "delivering" "retry_wait"} (:status %)) (:deliveries data))
+                     (some #(= "pending" (:status %)) (:resources data)))
         background-activity (when-let [job (first active-jobs)]
                               {:id (:id job) :kind :ai :label (str "AI " (get ai/phases (:phase job) "처리 중") (when (> (count active-jobs) 1) (str " · " (count active-jobs) "건")))})
-        props {:data data :busy busy :command command :navigate navigate :open-dialog open-dialog :select-doc select-document :request-query request-query
+        props {:data data :busy busy :command command :navigate navigate :open-dialog open-dialog :select-doc select-document :request-query request-query :refresh load
                :start-ai start-ai :resume-ai resume-ai :ai-drafts ai-drafts :set-ai-drafts set-ai-drafts}
         side-props {:page page :persona persona :navigate navigate
                     :unread-count (count (filter #(= "unread" (:state %)) (concat (get-in data [:assets :notifications]) (get-in data [:meetings :notifications]))))
@@ -191,15 +193,15 @@
            #(js/clearTimeout timer)) js/undefined)) [access])
     (uix/use-effect
      (fn []
-       (if (and has-jobs persona)
+       (if (and has-work persona)
          (let [controller (js/AbortController.) timer (atom nil) token @epoch
                poll (fn poll []
-                      (-> (request-json "/api/ai" {:signal (.-signal controller)})
+                      (-> (request-json (if has-jobs "/api/ai" "/api/state") {:signal (.-signal controller)})
                           (.then #(when (= token @epoch) (apply-state (:state %) token)))
                           (.catch (fn [_] nil))
                           (.finally #(when-not (.-aborted (.-signal controller)) (reset! timer (js/setTimeout poll 1500))))))]
            (reset! timer (js/setTimeout poll 1200))
-           #(do (.abort controller) (js/clearTimeout @timer))) js/undefined)) [has-jobs (:generation data) persona apply-state])
+           #(do (.abort controller) (js/clearTimeout @timer))) js/undefined)) [has-work has-jobs (:generation data) persona apply-state])
     (cond
       (not initialized) ($ :main {:class "account-screen"} ($ :div {:class "account-content"} ($ c/skeleton {:label "시연 계정 불러오는 중" :rows 5})))
       (and (nil? persona) (seq personas)) ($ accounts/account-picker {:personas personas :choose choose :busy busy :pending-id (:persona-id operation) :error error})

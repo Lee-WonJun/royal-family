@@ -5,5 +5,6 @@ declare namespace Cloudflare {
     AI_UNLOCK_CODE?: string;
     OPENAI_API_KEY?: string;
     RF_FORCE_MOCK?: string;
+    MCP_ENCRYPTION_KEY?: string;
   }
 }

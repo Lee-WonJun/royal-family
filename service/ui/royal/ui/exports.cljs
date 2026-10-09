@@ -20,7 +20,7 @@
                     (.catch #(set-error (.-message %)))
                     (.finally #(set-busy false)))))]
     ($ c/dialog {:title "PDF 내보내기" :on-close on-close :busy busy}
-       ($ :p {:class "muted small"} "선택 문서의 버전·상태·근거만 포함합니다.")
+       ($ :p {:class "muted small"} "최대 10개 문서의 버전·상태·근거를 포함합니다.")
        ($ :fieldset {:class "target-list" :disabled busy} ($ :legend "문서 선택")
           (for [record records :let [id (:id record) version (if (= id (:document_id item)) (:version item) (:version record))]]
             ($ :label {:key id} ($ :input {:type "checkbox" :checked (contains? selected id)
@@ -34,4 +34,4 @@
           ($ button {:disabled busy :on-click on-close} "닫기")
           (if result
             ($ :a {:class "button primary" :href (:url result)} "PDF 다운로드")
-            ($ button {:variant "primary" :loading busy :disabled (empty? selected) :on-click run} (if busy "PDF 만드는 중" "PDF 만들기")))))))
+            ($ button {:variant "primary" :loading busy :disabled (or (empty? selected) (> (count selected) 10)) :on-click run} (if busy "PDF 만드는 중" "PDF 만들기")))))))

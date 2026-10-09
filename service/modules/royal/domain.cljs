@@ -2,13 +2,18 @@
   (:require [royal.common :as c] [royal.seed :as seed] [royal.organization :as org]
             [royal.documents :as docs] [royal.meetings :as meetings] [royal.assets :as assets]
             [royal.accounting :as accounting] [royal.legal-support :as legal] [royal.ai-workflows :as ai]
+            [royal.events :as events]
+            [royal.resources :as resources]
             [clojure.string :as str]))
 
 (defn initial-state-js [generation] (clj->js (seed/initial-state (or generation 1))))
 (defn check-context! [state ctx p]
   (c/scoped! ctx (:clan_id state))
   (when (:clan_id p) (c/scoped! ctx (:clan_id p))))
-(defn public-state [state] (dissoc state :idempotency :reset_keys))
+(defn public-state [state]
+  (-> state (dissoc :idempotency :reset_keys :event_access)
+      (update :subscriptions #(mapv (fn [s] (select-keys s [:id :name :arguments :status :expires_at :verified_at :callback_host :generation])) %))
+      (update :deliveries #(mapv (fn [d] (dissoc d :body :lease)) %))))
 (defn evidence! [state evidence]
   (doseq [e evidence] (docs/version! (:documents state) (:document_id e) (:version e))))
 (defn check-issues [state]
@@ -55,6 +60,9 @@
       "document.review" (update state :documents docs/review ctx p)
       "export.record" (do (ai/worker! ctx) (evidence! state (:documents p))
                           (update state :exports (fnil conj []) (assoc p :id (:id ctx) :created_at (:now ctx) :generation (:generation state))))
+      "resource.track" (resources/track state ctx p)
+      "resource.update" (resources/update-resource state ctx p)
+      "cleanup.retry" (resources/retry-failed state)
       "transaction.add" (do (when (:document_id p) (docs/version! (:documents state) (:document_id p) (:document_version p)))
                             (update state :accounting accounting/add ctx p))
       "meeting.create" (do (when (:document_id p) (docs/version! (:documents state) (:document_id p) (:document_version p)))
@@ -74,23 +82,27 @@
                             (update-in state [:meetings :notifications]
                                        (fn [items] (mapv #(if (= (:id %) (:id p)) (assoc % :state "read") %) items))))
       "asset.snapshot" (let [{:keys [assets event]} (assets/record-snapshot (:assets state) ctx p)]
-                         (cond-> (assoc state :assets assets) event
-                           (update :outbox conj {:id (:id ctx) :event event :status "mock_recorded" :mode "mock" :generation (:generation state)})))
+                         (cond-> (assoc state :assets assets) event (events/enqueue ctx event)))
       "asset.failure" (update state :assets assets/record-failure ctx p)
       "asset.check" (update state :assets assets/record-check ctx p)
       "contract.save" (do (docs/version! (:documents state) (:document_id p) (:document_version p))
                            (update state :assets assets/save-contract ctx p))
       "asset.registry.mock-refresh" (let [{:keys [assets event]} (assets/refresh-registry-mock (:assets state) ctx p)]
-                                      (cond-> (assoc state :assets assets) event
-                                        (update :outbox conj {:id (:id ctx) :event event :status "mock_recorded"
-                                                             :mode "mock" :generation (:generation state)})))
+                                      (cond-> (assoc state :assets assets) event (events/enqueue ctx event)))
+      "subscription.upsert" (events/upsert-subscription state ctx p)
+      "subscription.stop" (events/stop-subscription state ctx p)
+      "delivery.retry" (events/retry-delivery state ctx p)
+      "delivery.update" (events/update-delivery state ctx p)
+      "delivery.interrupted" (events/interrupt-delivery state ctx p)
+      "delivery.stop" (events/stop-delivery state ctx p)
       "preparation.save" (update state :legal legal/preparation ctx p)
       "consultation.prepare" (do (evidence! state (:documents p)) (update state :legal legal/consultation ctx p))
       "settings.set" (let [feature (keyword (:feature p)) mode (:mode p)]
                          (c/ensure! (contains? seed/feature-labels feature) :invalid_input "기능을 찾을 수 없습니다.")
                          (c/ensure! (#{"mock" "live"} mode) :invalid_input "호출 모드를 확인해 주세요.")
                          (when (= mode "live") (c/ensure! (true? (get-in ctx [:readiness feature])) :external_unavailable "실제 연결 준비가 필요합니다."))
-                         (assoc-in state [:settings :features feature] mode))
+                         (cond-> (assoc-in state [:settings :features feature] mode)
+                           (and (= feature :events) (= mode "mock")) (events/stop-pending (constantly true))))
       "ai.start" (let [feature (keyword (:feature p)) mode (if (:force_mock ctx) "mock" (get-in state [:settings :features feature] "mock"))]
                    (ai/worker! ctx) (evidence! state (:evidence p))
                    (when (= "live" mode) (c/ensure! (true? (get-in ctx [:readiness feature])) :external_unavailable "실제 연결 준비가 필요합니다."))
@@ -119,8 +131,9 @@
                                         "\n\n연결 자료\n" (str/join "\n" (map #(str (:title (docs/record! (:documents state) (:document_id %))) " v" (:version %)) (:evidence p)))
                                         "\n\n확인할 항목\n일정·대상자·금액은 원자료와 대조해 주세요.")
                              :unconfirmed ["일정·대상자·금액 확인"]})))
-      "reset" (assoc (seed/initial-state (inc (:generation state))) :revision (:revision state)
-                     :reset_keys (conj (vec (:reset_keys state)) (:idempotency_key cmd)))
+      "reset" (resources/after-reset state
+                  (assoc (seed/initial-state (inc (:generation state))) :revision (:revision state)
+                         :reset_keys (conj (vec (:reset_keys state)) (:idempotency_key cmd))) ctx)
       (c/fail :invalid_input "지원하지 않는 작업입니다."))))
 
 (defn execute [state ctx cmd]

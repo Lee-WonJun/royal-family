@@ -1,4 +1,5 @@
 import { env } from 'cloudflare:workers';
+import { recordResource } from '../cleanup';
 import { z } from 'zod';
 import { AppError, readState, publicState, runQuery, runInternal, type State } from '../store';
 import { requireAiGrant } from '../access';
@@ -82,7 +83,7 @@ export async function runJob(request: Request, id: string, generation: number) {
     }
   };
   const client = createOpenAI({ apiKey: env.OPENAI_API_KEY, forceMock: env.RF_FORCE_MOCK === '1', jobId: id,
-    beforeRequest: guard });
+    beforeRequest: guard, onResource: (resource: any, status: string) => recordResource(resource, status, generation, id) });
   try {
     const executionInput = { ...job.input, documents: job.input.documents.map((doc: any) => {
       const version = runQuery(initial, { query: 'get_record', id: doc.document_id, version: doc.version });

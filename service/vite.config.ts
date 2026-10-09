@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 function localServerSecrets(): Record<string, string> {
   // Only called for local serve. These values must never enter build output.
   const bindings: Record<string, string> = {};
-  for (const [service, key] of [["developer", "AI_UNLOCK_CODE"], ["openai", "OPENAI_API_KEY"]]) {
+  for (const [service, key] of [["developer", "AI_UNLOCK_CODE"], ["openai", "OPENAI_API_KEY"], ["mcp", "MCP_ENCRYPTION_KEY"]]) {
     try {
       const file = readFileSync(new URL(`../vaults/${service}/.env`, import.meta.url), "utf8");
       const value = file.match(new RegExp(`^${key}\\s*=\\s*([^\\r\\n]+)$`, "m"))?.[1]?.trim().replace(/^['"]|['"]$/g, "");

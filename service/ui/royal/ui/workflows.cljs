@@ -3,6 +3,7 @@
             [royal.ui.parcel-map :refer [parcel-map]] [royal.parcels :as parcels]
             [royal.ui.registry :as registry] [royal.assets :as asset-rules]
             [royal.ui.meeting-panel :refer [meeting-panel]] [royal.accounting :as accounting]
+            [royal.ui.events :as events]
             [royal.ui.components :as c :refer [icon button badge status tabs field val-of won find-id latest]]))
 
 (defui home-page [{:keys [data navigate select-doc]}]
@@ -88,7 +89,7 @@
                ($ button {:variant "primary" :disabled (or busy outdated) :on-click #(command "consent.respond" {:request_id (:id r) :document_version (:document_version r) :member_id member-id :response response :note note} "응답을 저장했습니다.")} "응답 저장")))
          ($ meeting-panel {:data data :busy busy :command command :open-dialog open-dialog :navigate navigate :select-doc select-doc})))))
 
-(defui assets-page [{:keys [data busy command open-dialog navigate select-doc]}]
+(defui assets-page [{:keys [data busy command open-dialog navigate select-doc] :as props}]
   (let [[tab set-tab] (uix/use-state :land)
         assets (get-in data [:assets :items]) a (first assets)
         snapshots (get-in data [:assets :snapshots]) current (last (filter #(= (:id a) (:asset_id %)) snapshots))
@@ -156,5 +157,4 @@
                                                                   ($ :span {:class "muted"} (get {:owner_name "소유자" :owner_type "소유구분" :area_m2 "면적" :land_category "지목"} (keyword f)))
                                                                   ($ :del (str (get-in change [:before (keyword f)]))) ($ icon {:name :arrow :size 16}) ($ :strong (str (get-in change [:after (keyword f)])))))))
                        ($ c/empty-state {:title "변경된 자료가 없습니다." :text "후속 자료를 등록하면 이전 값과 비교합니다."}))
-                     ($ :div {:class "integration-status"} ($ :h3 "ChatGPT 알림") ($ badge "연결 준비 필요")
-                        ($ :p {:class "muted small"} (str "시연 이벤트 " (count (:outbox data)) "건 · 실제 전달 0건"))))))))
+                     ($ events/event-status props))))))

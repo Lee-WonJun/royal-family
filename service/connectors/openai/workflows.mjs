@@ -114,10 +114,12 @@ async function fileSearch(client, selectedModel, input, progress) {
     await progress('indexing');
     const store = await client.request('/vector_stores', { body: { name: 'royal-family-scoped-query', expires_after: { anchor: 'last_active_at', days: 1 } } });
     storeId = store.id;
+    await client.trackResource?.({ kind: 'vector_store', id: storeId }, 'active');
     for (const doc of input.documents) {
       const form = new FormData(); form.append('purpose', 'assistants');
       form.append('file', new File([`document_id: ${doc.document_id}\nversion: ${doc.version}\n# ${doc.title}\n\n${doc.body}`], `${doc.document_id}-v${doc.version}.md`, { type: 'text/markdown' }));
       const file = await client.request('/files', { form }); fileIds.push(file.id);
+      await client.trackResource?.({ kind: 'file', id: file.id }, 'active');
       let indexed = await client.request(`/vector_stores/${storeId}/files`, { body: { file_id: file.id,
         attributes: { document_id: doc.document_id, version: doc.version } } });
       for (let i = 0; indexed.status === 'in_progress' && i < 20; i++) {
@@ -136,8 +138,12 @@ async function fileSearch(client, selectedModel, input, progress) {
     result.search_results = calls.flatMap(x => x.results || []).map(x => ({ file_id: x.file_id, filename: x.filename, text: x.text, score: x.score }));
     return result;
   } finally {
-    if (storeId) await client.request(`/vector_stores/${storeId}`, { method: 'DELETE' }).catch(() => cleanupFailures.push({ type: 'vector_store', id: storeId }));
-    for (const id of fileIds) await client.request(`/files/${id}`, { method: 'DELETE' }).catch(() => cleanupFailures.push({ type: 'file', id }));
+    for (const resource of [...(storeId ? [{ kind: 'vector_store', id: storeId }] : []), ...fileIds.map(id => ({ kind: 'file', id }))]) {
+      let deleted = true;
+      await client.request(`/${resource.kind === 'file' ? 'files' : 'vector_stores'}/${resource.id}`, { method: 'DELETE' }).catch(() => { deleted = false; });
+      if (!deleted) cleanupFailures.push({ type: resource.kind, id: resource.id });
+      await client.trackResource?.(resource, deleted ? 'done' : 'pending');
+    }
     // A failed cleanup remains visible for a later authorized retry or reset cleanup.
     client.cleanupPending = cleanupFailures;
   }

@@ -175,4 +175,8 @@
                ($ badge (if (= "live" (:mode job)) "실제" "예시")) ($ c/status {:value (:status job)})))
           ($ :p {:class "muted small"} "아직 호출 기록이 없습니다.")))
      ($ :section {:class "settings-section"} ($ :h3 "시연 데이터")
+        (let [pending (filter #(contains? #{"pending" "failed"} (:status %)) (:resources data))]
+          (when (seq pending) ($ :div {:class "setting-row"}
+              ($ :span {:role "status"} (str "파일 정리 대기 " (count pending) "건"))
+              ($ button {:disabled busy :on-click #(command "cleanup.retry" {} "파일 정리를 다시 요청했습니다.")} "정리 재시도"))))
         ($ button {:icon-name :refresh :disabled (or busy unlocking) :on-click #(open-dialog :reset)} "초기 데이터로 되돌리기")))))

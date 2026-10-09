@@ -1,8 +1,8 @@
 # MCP·이벤트·서비스 skills 명세
 
-작성일: 2026-10-09 · 상태: 도구 1차 구현·Events 미연결 · 기준: [PRD RF-12·13](../prd/hackathon-prd.md#rf-12)
+작성일: 2026-10-09 · 상태: 도구·Events 구현, 실제 ChatGPT 연결 검증 전 · 기준: [PRD RF-12·13](../prd/hackathon-prd.md#rf-12)
 
-웹과 MCP는 [동일한 모듈 공개 기능](system-design.md#modules)을 사용한다. 이 문서는 전체 연결 계약이다. 현재 도구 14개의 HTTP route를 구현했으며 실제 ChatGPT 호출·Events·실행용 SKILL.md는 아직 완료하지 않았다. [구현 현황](../implementation-status.md)을 함께 확인한다.
+웹과 MCP는 [동일한 모듈 공개 기능](system-design.md#modules)을 사용한다. 현재 도구 14개, 이벤트 구독·전달, 서비스 SKILL.md 3개를 구현했다. 실제 ChatGPT 도구 실행·이벤트 수신 증거는 최종 연결 검증에서 확인한다. [구현 현황](../implementation-status.md)을 함께 확인한다.
 
 <a id="endpoint"></a>
 ## 연결과 인증
@@ -120,7 +120,7 @@ D1에 구독 주체·범위·callback·필터·상태·만료·검증 시점·�
 
 구독의 `delivery.secret`은 `whsec_` 접두사와 디코딩 후 24–64바이트 조건을 검사한다. callback은 HTTPS만 허용하고 redirect를 따르지 않는다. 검증 요청과 실제 전달 모두에서 비공개·로컬·예약 주소 접근을 차단한다.
 
-공식 요구는 연결 시점의 주소 검증과 검증한 주소로의 접속이다. Workers의 outbound fetch와 Sites 제공 기능으로 이 보장을 충족하는지는 구현 연결 단계에서 확인할 항목이다. URL 문자열 검사만으로 충족했다고 선언하지 않는다. 충족하지 못하면 실제 Events 완료를 보류하고 이 경계의 설계를 수정한다.
+연결 직전 DNS의 A·AAAA 응답을 모두 검사하고 공개 IP를 고정해 Workers TCP socket으로 연결한다. TLS는 원래 hostname을 검증하며 Host도 유지한다. Node 단위 검증은 차단 주소에 소켓 연결을 만들지 않는 것과 IP·TLS 호스트의 분리를 검사한다. Workers가 특정 목적지 IP의 TCP 연결을 제한할 수 있으므로 실제 ChatGPT callback의 가용성은 최종 연결 검증에서 별도로 확인한다.
 
 새 callback에는 짧게 유효한 일회용 challenge를 서명해서 전송한다. 2xx와 동일 challenge 응답을 모두 확인한 뒤 구독을 활성화한다. challenge는 상수 시간으로 비교하고 실패 시 `CallbackEndpointError`(-32015)에 원인을 분류한다. 같은 주체·callback의 검증 성공은 유한한 시간만 재사용한다.
 
@@ -137,13 +137,13 @@ D1에 구독 주체·범위·callback·필터·상태·만료·검증 시점·�
 <a id="skills"></a>
 ## 서비스 skills의 역할
 
-아래는 향후 `service/connectors/skills/`에 작성할 사용 절차의 명세다. 공통 목적·필수 규칙은 짧게 두고 상세 schema는 MCP 명세를 참조한다. 개발용 AGENTS.md와 최종 사용자가 서비스를 이용하는 skills는 구분한다.
+아래 사용 절차를 `service/connectors/skills/`에 작성했다. 개발용 AGENTS.md와 최종 사용자가 서비스를 이용하는 skills는 구분한다. 파일 작성과 사용자 계정의 플러그인 설치·연결은 별도 상태다.
 
-| 예정 skill | 적용할 요청 | 호출 흐름과 종료 기준 |
+| 서비스 skill | 적용할 요청 | 호출 흐름과 종료 기준 |
 | --- | --- | --- |
-| `royal-family-records` | 종원 계층·기존 회의록·토지·규약·법률 근거를 찾고 설명 | `get_clan_overview` → 필요한 `get_member_hierarchy`/`search_records`/`get_record`/`check_legal_basis`. 관계 확인 상태·문서·버전·출처와 부족한 근거를 제시하면 완료 |
-| `royal-family-preparation` | 설립 준비·총회·문서 초안·법무사 후보를 준비 | 보유 자료·요청 업무 확인 → `prepare_establishment` 또는 `prepare_meeting` → `draft_document`·`recommend_experts`. 초안·누락 항목·후보 근거를 보여주며 자동 승인·발송하지 않음 |
-| `royal-family-change-review` | 토지 변화·문제 점검·변호사 후보·상담 준비 | 구독 대상과 사용자 대응 지시 확인 → 이벤트 수신 → `get_asset_changes`·`get_record`·`check_issues` → 필요 시 후보 추천. 자료상 사실·질문·다음 작업을 설명하고 사용자 선택 후 상담 초안을 준비 |
+| [royal-family-records](../../service/connectors/skills/royal-family-records/SKILL.md) | 종원 계층·기존 회의록·토지·규약·법률 근거를 찾고 설명 | `get_clan_overview` → 필요한 `get_member_hierarchy`/`search_records`/`get_record`/`check_legal_basis`. 관계 확인 상태·문서·버전·출처와 부족한 근거를 제시하면 완료 |
+| [royal-family-preparation](../../service/connectors/skills/royal-family-preparation/SKILL.md) | 설립 준비·총회·문서 초안·법무사 후보를 준비 | 보유 자료·요청 업무 확인 → `prepare_establishment` 또는 `prepare_meeting` → `draft_document`·`recommend_experts`. 초안·누락 항목·후보 근거를 보여주며 자동 승인·발송하지 않음 |
+| [royal-family-change-review](../../service/connectors/skills/royal-family-change-review/SKILL.md) | 토지 변화·문제 점검·변호사 후보·상담 준비 | 구독 대상과 사용자 대응 지시 확인 → 이벤트 수신 → `get_asset_changes`·`get_record`·`check_issues` → 필요 시 후보 추천. 자료상 사실·질문·다음 작업을 설명하고 사용자 선택 후 상담 초안을 준비 |
 
 어느 skill도 일반 조회 요청을 동의·외부 공유 권한으로 확대하지 않는다. 동의 기록은 사용자가 요청·버전·시연 대상 종원·응답을 지정한 때에만 `record_consent`로 처리하며 관리자 시연 입력임을 표시한다. 후보 추천만으로 실제 전문가의 접수나 수임을 선언하지 않는다.
 

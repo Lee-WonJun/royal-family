@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { readState, runCommandDetailed, requireSameOrigin, json, errorResponse, AppError, workspaceId } from "../store";
 export async function POST(request: Request) {
+  let storedKey: string | undefined, uploadGeneration: number | undefined;
   try {
     requireSameOrigin(request);
     if (!env.BUCKET) throw new AppError("storage_unavailable", "파일 저장소에 연결할 수 없습니다.", 503);
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
     const hash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map(b => b.toString(16).padStart(2, "0")).join("");
     // A retry after a lost response must name the same object and domain command.
     const key = `${workspaceId}/${generation}/${requestKey}/${hash}`;
+    storedKey = key; uploadGeneration = generation;
     const isText = /\.(txt|md|csv)$/i.test(file.name);
     const body = isText ? new TextDecoder().decode(bytes).slice(0, 19000) : "원본 등록 완료. 본문 추출이 필요합니다.";
     const command = { command: "document.create", expected_revision: revision, generation,
@@ -35,7 +37,9 @@ export async function POST(request: Request) {
     return json({ ok: true, ...result, sha256: hash });
   } catch (e) {
     // Do not delete here: a concurrent identical request may already have committed it.
-    // Generation-scoped cleanup can safely remove old objects after a reset.
+    // A reset can finish while the upload is in flight, after its prefix was cleaned.
+    if (storedKey && uploadGeneration && (await readState().catch(() => null))?.generation > uploadGeneration)
+      await env.BUCKET?.delete(storedKey).catch(() => undefined);
     return errorResponse(e);
   }
 }

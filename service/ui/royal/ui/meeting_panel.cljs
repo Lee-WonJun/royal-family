@@ -10,6 +10,11 @@
                 [:delegations "위임" [["pending" "미확인"] ["none" "위임 없음"] ["proxy" "위임 기록"]]]]
    :votes [[:votes "표결" [["pending" "미응답"] ["agree" "찬성"] ["disagree" "반대"] ["abstain" "기권"]]]]})
 
+(defn display-date [value]
+  (let [date (js/Date. value)]
+    (if (js/isNaN (.getTime date)) value
+      (.toLocaleString date "ko-KR" #js {:year "numeric" :month "long" :day "numeric" :hour "numeric" :minute "2-digit"}))))
+
 (defui meeting-panel [{:keys [data busy command open-dialog select-doc navigate]}]
   (let [[meeting-id set-meeting] (uix/use-state "meeting01") [tab set-tab] (uix/use-state :notice)
         [version set-version] (uix/use-state "current")
@@ -23,7 +28,7 @@
              (for [m meetings] ($ :option {:key (:id m) :value (:id m)} (:title m))))
           ($ button {:on-click #(open-dialog :meeting-revise current)} "총회 정보 변경"))
        ($ :div {:class "meeting-summary"} ($ :h2 (:title meeting)) ($ :p (:agenda meeting))
-          ($ :p {:class "muted"} (str (:date meeting) " · " (:place meeting)))
+          ($ :p {:class "muted"} (str (display-date (:date meeting)) " · " (:place meeting)))
           ($ :div {:class "section-label"}
              (for [[id v label] [[(:document_id meeting) (:document_version meeting) "안건 자료"]
                                 [(:regulation_id meeting) (:regulation_version meeting) "적용 규약"]]]

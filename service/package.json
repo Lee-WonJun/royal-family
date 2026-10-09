@@ -18,7 +18,8 @@
     "typecheck": "tsc --noEmit",
     "test:access": "node --test test/access.test.mjs",
     "test:openai": "node --test test/openai.test.mjs",
-    "test:pdf": "node --test test/pdf.test.mjs"
+    "test:pdf": "node --test test/pdf.test.mjs",
+    "test:events": "node --test test/events.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

@@ -6,7 +6,10 @@
 (def phases {"queued" "대기 중" "routing" "모델 선택 중" "processing" "처리 중" "indexing" "자료 색인 중"
              "searching" "근거 검색 중" "completed" "검토 전" "failed" "실패" "cancelled" "사용 중지"})
 (defn active? [job] (contains? #{"queued" "running"} (:status job)))
-(defn document-refs [data] (mapv #(hash-map :document_id (:id %) :version (:version %)) (get-in data [:documents :records])))
+(defn document-refs [data]
+  (let [records (get-in data [:documents :records])
+        priority (filter #(or (= "규약" (:kind %)) (= "public_source" (:mode %))) records)]
+    (mapv #(hash-map :document_id (:id %) :version (:version %)) (take 12 (distinct (concat priority (reverse records)))))))
 
 (defui job-card [{:keys [job busy command resume-ai start-ai navigate select-doc]}]
   (let [[expanded set-expanded] (uix/use-state (active? job))
@@ -98,5 +101,6 @@
                                              :on-change #(set-value :selected ((if (contains? selected id) disj conj) selected id))})
                   (str (:title d) " · v" (:version d)))))
           ($ :div {:class "dialog-actions"} ($ :span {:class "muted small"} (if (= mode "live") "실제 AI 호출이 실행됩니다." "설정에서 실제 호출을 켤 수 있습니다."))
-             ($ button {:type "submit" :variant "primary" :disabled (or busy (empty? refs))} "실행")))
+             ($ :span {:class "muted small"} (str "선택 " (count refs) " / 12개"))
+             ($ button {:type "submit" :variant "primary" :disabled (or busy (empty? refs) (> (count refs) 12))} "실행")))
        ($ job-list props))))
