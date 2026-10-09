@@ -82,7 +82,7 @@ export async function runJob(request: Request, id: string, generation: number) {
       await requireAiGrant(request, current);
     }
   };
-  const client = createOpenAI({ apiKey: env.OPENAI_API_KEY, forceMock: env.RF_FORCE_MOCK === '1', jobId: id,
+  const client = createOpenAI({ apiKey: env.OPENAI_API_KEY, projectId: env.OPENAI_PROJECT_ID, forceMock: env.RF_FORCE_MOCK === '1', jobId: id,
     beforeRequest: guard, onResource: (resource: any, status: string) => recordResource(resource, status, generation, id) });
   try {
     const executionInput = { ...job.input, documents: job.input.documents.map((doc: any) => {

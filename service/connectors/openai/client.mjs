@@ -5,7 +5,7 @@ export class AiProviderError extends Error {
   }
 }
 
-export function createOpenAI({ apiKey, forceMock = false, fetchImpl = fetch, now = Date.now, timeoutMs = 90000, jobId, beforeRequest = async (_method) => {}, onResource = async (_resource, _status) => {} }) {
+export function createOpenAI({ apiKey, projectId, forceMock = false, fetchImpl = fetch, now = Date.now, timeoutMs = 90000, jobId, beforeRequest = async (_method) => {}, onResource = async (_resource, _status) => {} }) {
   const calls = [];
   async function request(path, { method = 'POST', body, form, timeout = timeoutMs } = {}) {
     if (forceMock) throw new AiProviderError('external_disabled', '일반 테스트에서는 실제 API를 호출할 수 없습니다.', 403);
@@ -22,7 +22,7 @@ export function createOpenAI({ apiKey, forceMock = false, fetchImpl = fetch, now
       const response = await fetchImpl(`https://api.openai.com/v1${path}`, {
         method, signal: controller.signal,
         headers: { Authorization: `Bearer ${apiKey}`, ...(form ? {} : { 'Content-Type': 'application/json' }),
-          ...(jobId ? { 'X-Client-Request-Id': jobId } : {}) },
+          ...(projectId ? { 'OpenAI-Project': projectId } : {}), ...(jobId ? { 'X-Client-Request-Id': jobId } : {}) },
         ...(body !== undefined ? { body: JSON.stringify(body) } : form ? { body: form } : {}),
       });
       requestId = response.headers.get('x-request-id');

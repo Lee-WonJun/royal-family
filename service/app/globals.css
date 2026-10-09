@@ -2198,7 +2198,7 @@ td:first-child,th:first-child {
 .source-audio { width:100%; margin:14px 0; }
 .toast { flex-wrap:wrap; max-width:min(640px,calc(100vw - 32px)); }
 .toast > span { flex:1; min-width:140px; overflow-wrap:anywhere; }
-.toast .button { flex:0 0 auto; padding:7px 10px; min-height:36px; }
+.toast .button { flex:0 0 auto; padding:7px 10px; min-height:36px; color:#183d35; background:#fff; }
 @media(max-width:900px) { .activity-banner { top:70px; right:16px; } }
 @media(prefers-reduced-motion:reduce) { .spinner,.skeleton-row span { animation:none; } }
 @media(max-width:640px) {

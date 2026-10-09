@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { signatureHeaders, signingKey, constantEqual, seal, unseal, subscriptionId, normalizedArguments } from '../connectors/mcp/events/security.mjs';
-import { publicAddress, callbackUrl, resolvePublic, parseHttpResponse } from '../connectors/mcp/events/network.mjs';
+import { publicAddress, callbackUrl, resolvePublic } from '../connectors/mcp/events/network.mjs';
 import { expiry, verifyCallback, deliveryOutcome } from '../connectors/mcp/events/protocol.mjs';
-import { postPinned } from '../connectors/mcp/events/transport-core.mjs';
+import { postPublic } from '../connectors/mcp/events/transport-core.mjs';
 
 const secret = 'whsec_' + Buffer.alloc(32, 7).toString('base64');
 const master = Buffer.alloc(32, 19).toString('base64');
@@ -38,12 +38,6 @@ test('public address validation rejects private, reserved, mapped and mixed DNS 
   const fakeDns = async url => Response.json({ Status: 0, Answer: url.includes('type=AAAA') ? [] : [{ type: 1, data: '8.8.8.8' }, { type: 1, data: '10.0.0.1' }] });
   await assert.rejects(resolvePublic(callbackUrl('https://receiver.example/path'), fakeDns), error => error.reason === 'non_public_address');
 });
-test('HTTP parsing retains body bytes and does not turn redirects into success', () => {
-  const wire = new TextEncoder().encode('HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n0\r\n\r\n');
-  assert.deepEqual(parseHttpResponse(wire), { status: 200, body: 'hello' });
-  assert.equal(parseHttpResponse(new TextEncoder().encode('HTTP/1.1 302 Found\r\nLocation: http://127.0.0.1\r\nContent-Length: 0\r\n\r\n')).status, 302);
-  assert.throws(() => parseHttpResponse(new TextEncoder().encode('HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\na')));
-});
 test('subscription challenge requires both receipt and an exact echo; TTL is bounded', async () => {
   const echo = async (_url, body) => ({ status: 200, body: JSON.stringify({ challenge: JSON.parse(body).challenge }) });
   const args = { url: 'https://receiver.example', secret, id: 'sub1', post: echo, now: () => 1000, randomId: () => 'unique-test-challenge' };
@@ -62,19 +56,38 @@ test('delivery stops on permanent errors and caps transient attempts at three', 
   assert.equal(deliveryOutcome(0, 'timeout', 2), 'retry_wait');
   assert.equal(deliveryOutcome(204, null, 1), 'delivered');
 });
-test('connection uses the verified IP while TLS and Host retain the original hostname', async () => {
-  const received = [], sockets = []; let tlsName, reads = 0;
-  const tls = { opened: Promise.resolve(), close: async () => {},
-    writable: { getWriter: () => ({ write: async bytes => received.push(new TextDecoder().decode(bytes)), releaseLock() {} }) },
-    readable: { getReader: () => ({ read: async () => reads++ ? { done: true } : { done: false, value: new TextEncoder().encode('HTTP/1.1 204 No Content\r\nContent-Length: 0\r\n\r\n') }, releaseLock() {} }) } };
-  const connect = address => { sockets.push(address); return { opened: Promise.resolve(), close: async () => {}, startTls: options => { tlsName = options.expectedServerHostname; return tls; } }; };
-  const fetchImpl = async url => Response.json({ Status: 0, Answer: url.includes('type=AAAA') ? [] : [{ type: 1, data: '8.8.8.8' }] });
-  const response = await postPinned('https://receiver.example/hook', '{}', { 'Content-Type': 'application/json' }, { connect, fetchImpl });
-  assert.equal(response.status, 204); assert.deepEqual(sockets, [{ hostname: '8.8.8.8', port: 443 }]);
-  assert.equal(tlsName, 'receiver.example'); assert.ok(received.join('').includes('Host: receiver.example\r\n'));
-  assert.equal(received.at(-1), '{}');
-  let called = false;
-  await assert.rejects(postPinned('https://receiver.example/hook', '{}', {}, { connect: () => { called = true; },
-    fetchImpl: async () => Response.json({ Status: 0, Answer: [{ type: 1, data: '127.0.0.1' }] }) }));
-  assert.equal(called, false, 'blocked address must never reach the socket boundary');
+const dns = url => Response.json({ Status: 0, Answer: url.includes('type=AAAA') ? [] : [{ type: 1, data: '8.8.8.8' }] });
+test('public HTTP boundary preserves signed bytes and never follows redirects', async () => {
+  const sent = []; let checked = false;
+  const fetchImpl = async (url, init) => {
+    if (url.startsWith('https://cloudflare-dns.com/')) return dns(url);
+    assert.equal(checked, true); sent.push({ url, init });
+    return new Response('', { status: 302, headers: { Location: 'http://127.0.0.1/private' } });
+  };
+  const body = JSON.stringify({ message: '서명 원문' }), headers = { 'webhook-signature': 'v1,signature' };
+  const result = await postPublic('https://receiver.example/hook', body, headers, { fetchImpl, beforeSend: async () => { checked = true; } });
+  assert.equal(result.status, 302); assert.equal(sent.length, 1);
+  assert.equal(sent[0].url, 'https://receiver.example/hook');
+  assert.equal(sent[0].init.redirect, 'manual'); assert.equal(sent[0].init.body, body);
+  assert.equal(sent[0].init.headers['webhook-signature'], headers['webhook-signature']);
+});
+test('blocked DNS, revoked delivery, oversized bodies and timeout stop delivery', async () => {
+  let posts = 0;
+  const blocked = async (url) => {
+    if (!url.startsWith('https://cloudflare-dns.com/')) posts++;
+    return Response.json({ Status: 0, Answer: [{ type: 1, data: '127.0.0.1' }] });
+  };
+  await assert.rejects(postPublic('https://receiver.example', '{}', {}, { fetchImpl: blocked }), e => e.reason === 'non_public_address');
+  assert.equal(posts, 0);
+  const allowed = async url => {
+    if (url.startsWith('https://cloudflare-dns.com/')) return dns(url);
+    posts++; return new Response('x'.repeat(262145));
+  };
+  await assert.rejects(postPublic('https://receiver.example', '{}', {}, { fetchImpl: allowed, beforeSend: async () => { throw new Error('revoked'); } }));
+  assert.equal(posts, 0);
+  await assert.rejects(postPublic('https://receiver.example', '{}', {}, { fetchImpl: allowed }), e => e.reason === 'response_too_large');
+  await assert.rejects(postPublic('https://receiver.example', '{}', {}, { fetchImpl: allowed, timeoutMs: 5,
+    beforeSend: () => new Promise(resolve => setTimeout(resolve, 20)) }), e => e.reason === 'timeout');
+  await new Promise(resolve => setTimeout(resolve, 25));
+  assert.equal(posts, 1, 'a late guard must not send after timeout');
 });

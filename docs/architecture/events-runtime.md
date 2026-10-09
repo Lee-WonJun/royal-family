@@ -6,7 +6,7 @@
 
 `security.mjs`는 정규화한 인수·인증 주체·callback·이벤트로 구독 ID를 만들고 AES-GCM으로 서명 비밀값을 보관한다. master key는 `vaults/mcp/.env` 또는 Sites secret `MCP_ENCRYPTION_KEY`다. 공개 상태에는 callback 전체 URL·암호문·소유자 ID·본문·lease를 포함하지 않는다.
 
-`network.mjs`는 HTTPS URL과 공개 목적지 주소를 검사한다. `transport-core.mjs`가 DNS의 공개 IP로 접속하고 TLS·Host에는 원래 hostname을 사용한다. redirect를 따라가지 않는다. 소켓 경계와 DNS를 주입한 테스트로 이 동작을 검사했다. 실제 Workers 목적지 제한은 live callback 검증에서 확인해야 한다.
+HTTPS·443·인증정보 없는 callback만 허용하고 DNS A·AAAA에 비공개 주소가 섞이면 차단한다. 연결 시점의 비공개 네트워크 차단은 Workers의 네이티브 `fetch`와 `global_fetch_strictly_public` 설정에 맡긴다. DNS 사전 검사만으로 rebinding을 막는다고 주장하지 않는다. redirect는 따라가지 않고 응답은 256 KiB·요청은 5초로 제한한다. 일반 Node fetch로 이 경계를 대체하면 안 된다. [Workers 보안 경계](https://developers.cloudflare.com/workers/reference/security-model/)와 [공개 fetch 설정](https://developers.cloudflare.com/workers/configuration/compatibility-flags/#global-fetch-strictly-public)을 근거로 하며 실제 배포와 ChatGPT callback 연결은 별도로 검증한다.
 
 구독 종료·권한 회수·만료·OFF·리셋은 후속 전달을 막는다. OFF 동안 생성한 사건은 ON으로 바꾸어도 전송하지 않는다. 로컬 앱에서 회수한 구독 권한을 매번 재검사한다. 플랫폼 자체 OAuth 연결 종료 통지는 별도로 제공되지 않으므로 수신 측의 410 또는 만료로 전달을 중지한다. 이를 플랫폼의 실시간 토큰 introspection으로 표현하지 않는다.
 

@@ -100,7 +100,7 @@ live E2E에만 추가로 vaults에서 서버에 주입할 키·모델 접근·Si
 
 ## 명령과 결과 기록
 
-현재 `test:unit`, `test:access`, `typecheck`, `cljs:build`, `build`가 있다. `test:access`는 실제 코드 없이 가짜 비밀값으로 서명·만료·계정·세대 경계를 검사한다. 실제 명령은 [service/README.md](../../service/README.md)를 따른다. `test:e2e`·`test:e2e:live`는 아직 만들지 않았으며 실행한 것으로 기록하지 않는다. 기본 테스트·개발 중 CI가 E2E 또는 실제 API 호출을 암묵적으로 실행하지 않게 한다. E2E의 두 모드 모두 완료 게이트 이후에만 실행한다.
+현재 `test:unit`, `test:access`, `test:openai`, `test:events`, `test:pdf`, `typecheck`, `cljs:build`, `build`, `test:e2e`, `test:e2e:live`가 있다. 일반 단위 검사와 E2E는 fake 또는 강제 mock을 사용한다. E2E 두 모드는 완료 게이트 이후에만 실행하며 실제 API 검증은 명시적인 환경 변수와 전용 서버가 필요하다. 명령·전용 저장소·호출 상한은 [service/README.md](../../service/README.md), 실행 증거는 [구현 현황](../implementation-status.md)을 따른다. 기본 테스트·CI가 실제 API를 암묵적으로 호출하지 않는다.
 
 제품 테스트 결과는 commit, mock/live 구분, 기능 토글·데이터 세대, 환경·모델, fixture 버전, 시나리오·속성 ID, 명령·seed·결과·증거를 기록한다. mock 실행은 실제 외부 호출이 0회였는지 확인한다. live는 호출 ID·시간·사용량을, 이벤트는 eventId·subscriptionId·전달·채팅 반응을 연결한다. vaults의 비밀값과 불필요한 원문 개인정보는 증거에 넣지 않는다.
 

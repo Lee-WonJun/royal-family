@@ -29,6 +29,8 @@
 
 `vaults/openai/.env`의 `OPENAI_API_KEY`는 로컬 serve에만 주입하고, 배포에서는 Sites secret을 사용한다. 클라이언트·Git·빌드 산출물에 넣지 않는다. 기능은 기본 mock이다. 실제 ON은 개발자 코드와 준비된 서버 어댑터를 모두 요구한다. `RF_FORCE_MOCK=1`이면 키나 저장된 live 토글이 있어도 외부 호출이 차단된다.
 
+같은 서버 설정의 `OPENAI_PROJECT_ID`가 있으면 생성·파일·색인·정리 요청 모두 `OpenAI-Project` 헤더로 전달한다. 실제 검증에서 프로젝트 생략 시 Files·Vector Stores가 401, 관리 화면의 프로젝트 명시 시 200인 차이를 확인했다. 이 설정은 사용자 입력으로 임의 변경할 수 없다. [OpenAI 인증 계약](https://developers.openai.com/api/reference/overview#authentication)을 따른다.
+
 작업에는 입력 버전, 실행 모드, 라우팅 결과, 선택 모델, endpoint, 요청·응답 ID, 처리 시간, 제공된 usage, 실패 코드가 남는다. 제공되지 않은 사용량을 측정값으로 만들지 않는다. 단위 테스트는 가짜 fetch·파일로 허용 모델, 실제 호출 차단, 오류, 근거·후보 범위, 색인 정리, 중복 실행, 리셋 경계를 확인한다.
 
 공식 계약: [Decisions](https://developers.openai.com/api/docs/guides/decisions), [GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna), [GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol), [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [File Search](https://developers.openai.com/api/docs/guides/tools-file-search), [Whisper 구간 정보](https://developers.openai.com/api/docs/guides/speech-to-text#timestamps).

@@ -4,6 +4,7 @@ declare namespace Cloudflare {
     BUCKET?: R2Bucket;
     AI_UNLOCK_CODE?: string;
     OPENAI_API_KEY?: string;
+    OPENAI_PROJECT_ID?: string;
     RF_FORCE_MOCK?: string;
     MCP_ENCRYPTION_KEY?: string;
   }

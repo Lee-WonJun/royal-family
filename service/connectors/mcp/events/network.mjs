@@ -35,31 +35,3 @@ export async function resolvePublic(url, fetcher = fetch, signal) {
   if (addresses.some(address => !publicAddress(address))) throw new CallbackError('non_public_address');
   return addresses.find(address => isIP(address) === 4) || addresses[0];
 }
-export function parseHttpResponse(bytes) {
-  const view = new TextDecoder('latin1').decode(bytes);
-  const split = view.indexOf('\r\n\r\n');
-  if (split < 0 || split > 16384) throw new CallbackError('invalid_response');
-  const lines = view.slice(0, split).split('\r\n'), match = /^HTTP\/1\.[01] (\d{3})/.exec(lines.shift());
-  if (!match) throw new CallbackError('invalid_response');
-  const headers = new Map(lines.map(line => { const at = line.indexOf(':'); return [line.slice(0, at).toLowerCase(), line.slice(at + 1).trim()]; }));
-  let body = bytes.slice(split + 4);
-  if (/chunked/i.test(headers.get('transfer-encoding') || '')) {
-    const chunks = []; let offset = 0, length = 0;
-    while (true) {
-      const end = new TextDecoder('latin1').decode(body.slice(offset)).indexOf('\r\n');
-      if (end < 0) throw new CallbackError('invalid_response');
-      const sizeText = new TextDecoder().decode(body.slice(offset, offset + end)).split(';')[0];
-      if (!/^[0-9a-f]+$/i.test(sizeText)) throw new CallbackError('invalid_response');
-      const size = parseInt(sizeText, 16); offset += end + 2;
-      if (!size) break;
-      if (offset + size + 2 > body.length || body[offset + size] !== 13 || body[offset + size + 1] !== 10) throw new CallbackError('invalid_response');
-      length += size;
-      if (length > 262144) throw new CallbackError('response_too_large');
-      chunks.push(body.slice(offset, offset + size)); offset += size + 2;
-    }
-    body = new Uint8Array(length); let position = 0;
-    for (const chunk of chunks) { body.set(chunk, position); position += chunk.length; }
-  } else if (headers.has('content-length') && Number(headers.get('content-length')) !== body.length) throw new CallbackError('invalid_response');
-  if (body.length > 262144) throw new CallbackError('response_too_large');
-  return { status: Number(match[1]), body: new TextDecoder().decode(body) };
-}

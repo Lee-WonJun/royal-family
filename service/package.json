@@ -19,7 +19,9 @@
     "test:access": "node --test test/access.test.mjs",
     "test:openai": "node --test test/openai.test.mjs",
     "test:pdf": "node --test test/pdf.test.mjs",
-    "test:events": "node --test test/events.test.mjs"
+    "test:events": "node --test test/events.test.mjs",
+    "test:e2e": "node test/e2e-api.mjs",
+    "test:e2e:live": "node test/e2e-live-openai.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

@@ -38,7 +38,7 @@ export async function flushCleanup() {
         if (env.RF_FORCE_MOCK === '1') continue;
         const reference = { kind: resource.kind, id: resource.resource_id };
         if (!validResource(reference)) throw new Error('Invalid cleanup resource');
-        const client = createOpenAI({ apiKey: env.OPENAI_API_KEY, timeoutMs: 5000, jobId: `cleanup-${resource.job_id}` });
+        const client = createOpenAI({ apiKey: env.OPENAI_API_KEY, projectId: env.OPENAI_PROJECT_ID, timeoutMs: 5000, jobId: `cleanup-${resource.job_id}` });
         try { await client.request(`/${resource.kind === 'file' ? 'files' : 'vector_stores'}/${resource.resource_id}`, { method: 'DELETE' }); }
         catch (error) { if (!(error instanceof AiProviderError) || error.status !== 404) throw error; }
         const latest = await readState();

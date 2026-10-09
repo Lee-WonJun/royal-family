@@ -1,38 +1,34 @@
-import { callbackUrl, resolvePublic, parseHttpResponse } from './network.mjs';
+import { callbackUrl, resolvePublic } from './network.mjs';
 import { CallbackError } from './security.mjs';
 
-export async function postPinned(rawUrl, body, headers, { connect, fetchImpl = fetch, timeoutMs = 5000, beforeSend = async () => {} }) {
+// fetchImpl must provide a connection-time public-network restriction. Production
+// supplies Workers global fetch with global_fetch_strictly_public enabled. The
+// DNS check below rejects mixed answers early; it alone is not a rebinding guard.
+export async function postPublic(rawUrl, body, headers, { fetchImpl, timeoutMs = 5000, beforeSend = async () => {} }) {
   const url = callbackUrl(rawUrl), controller = new AbortController();
-  let socket;
-  let timer;
+  let timer, reader;
   const work = async () => {
-    const address = await resolvePublic(url, fetchImpl, controller.signal);
-    // Pin the checked address. TLS still verifies the callback's original hostname.
-    const plain = connect({ hostname: address, port: 443 }, { secureTransport: 'starttls', allowHalfOpen: false });
-    socket = plain;
-    await plain.opened;
-    socket = plain.startTls({ expectedServerHostname: url.hostname });
-    await socket.opened;
-    const content = new TextEncoder().encode(body);
-    const lines = [`POST ${url.pathname}${url.search} HTTP/1.1`, `Host: ${url.hostname}`, 'Connection: close', `Content-Length: ${content.length}`,
-      ...Object.entries(headers).map(([name, value]) => `${name}: ${value}`), '', ''];
     if (Object.entries(headers).some(([key, value]) => /[\r\n]/.test(key + value))) throw new CallbackError('invalid_headers');
-    const writer = socket.writable.getWriter();
+    await resolvePublic(url, fetchImpl, controller.signal);
     await beforeSend();
-    await writer.write(new TextEncoder().encode(lines.join('\r\n'))); await writer.write(content); writer.releaseLock();
-    const reader = socket.readable.getReader(), chunks = [];
-    let length = 0;
+    controller.signal.throwIfAborted();
+    const response = await fetchImpl(url.href, { method: 'POST', body, headers,
+      redirect: 'manual', signal: controller.signal });
+    if (Number(response.headers.get('content-length')) > 262144) {
+      await response.body?.cancel();
+      throw new CallbackError('response_too_large');
+    }
+    if (!response.body) return { status: response.status, body: '' };
+    reader = response.body.getReader();
+    const decoder = new TextDecoder(); let text = '', length = 0;
     while (true) {
       const result = await reader.read();
       if (result.done) break;
-      length += result.value.length;
-      if (length > 278528) throw new CallbackError('response_too_large');
-      chunks.push(result.value);
+      length += result.value.byteLength;
+      if (length > 262144) throw new CallbackError('response_too_large');
+      text += decoder.decode(result.value, { stream: true });
     }
-    reader.releaseLock();
-    const response = new Uint8Array(length); let position = 0;
-    for (const chunk of chunks) { response.set(chunk, position); position += chunk.length; }
-    return parseHttpResponse(response);
+    return { status: response.status, body: text + decoder.decode() };
   };
   try {
     return await Promise.race([work(), new Promise((_, reject) => {
@@ -40,8 +36,8 @@ export async function postPinned(rawUrl, body, headers, { connect, fetchImpl = f
     })]);
   } catch (error) {
     if (error instanceof CallbackError) throw error;
-    throw new CallbackError('connection_failed');
+    throw new CallbackError(controller.signal.aborted ? 'timeout' : 'connection_failed');
   } finally {
-    clearTimeout(timer); controller.abort(); await socket?.close().catch(() => undefined);
+    clearTimeout(timer); controller.abort(); await reader?.cancel().catch(() => undefined);
   }
 }

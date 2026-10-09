@@ -23,6 +23,18 @@ test('mock guard blocks every provider call even when a key is present', async (
   assert.equal(calls, 0);
 });
 
+test('model, file and cleanup calls keep the explicitly selected OpenAI project', async () => {
+  const requests = [];
+  const client = createOpenAI({ apiKey: 'fake-key', projectId: 'proj_selected', fetchImpl: async (url, options) => {
+    requests.push({ url, ...options }); return Response.json({ id: 'test-result' });
+  } });
+  await client.request('/responses', { body: { model: 'gpt-6-luna' } });
+  await client.request('/vector_stores', { method: 'GET' });
+  await client.request('/files/file_owned', { method: 'DELETE' });
+  assert.equal(requests.length, 3);
+  for (const request of requests) assert.equal(request.headers['OpenAI-Project'], 'proj_selected');
+});
+
 test('Luna Decisions routes generation only to Luna or Sol', async () => {
   assert.deepEqual(routedModels, ['gpt-6-luna', 'gpt-6.1-sol']);
   for (const selected of routedModels) {

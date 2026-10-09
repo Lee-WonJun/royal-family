@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { readState, runInternal, AppError, workspaceId, type State } from '../store';
 import { callbackUrl } from '../../../connectors/mcp/events/network.mjs';
 import { CallbackError, constantEqual, signingKey, seal, unseal, subscriptionId, normalizedArguments, signatureHeaders, canonical } from '../../../connectors/mcp/events/security.mjs';
-import { pinnedPost } from '../../../connectors/mcp/events/transport';
+import { publicPost } from '../../../connectors/mcp/events/transport';
 import { expiry, verifyCallback, deliveryOutcome } from '../../../connectors/mcp/events/protocol.mjs';
 
 const argumentsSchema = z.object({ clan_id: z.literal('demo_a'), asset_id: z.string().min(1).max(200), fields: z.array(z.enum(['owner_name', 'owner_type', 'area_m2', 'land_category'])).min(1).max(20).optional() }).strict();
@@ -40,7 +40,7 @@ export async function changeSubscription(owner: string, raw: unknown, stop = fal
   let verifiedAt = state.subscriptions.find((sub: any) => sub.owner_id === owner && sub.callback_url === url &&
     Date.now() - Date.parse(sub.verified_at) < 5 * 60 * 1000)?.verified_at;
   if (!verifiedAt) {
-    verifiedAt = await verifyCallback({ url, secret: input.delivery.secret, id, post: pinnedPost });
+    verifiedAt = await verifyCallback({ url, secret: input.delivery.secret, id, post: publicPost });
   }
   const refreshBefore = expiry(input.ttlMs);
   let priorSecret = previous?.previous_encrypted_secret || null, rotationUntil = previous?.rotation_until || null;
@@ -85,7 +85,7 @@ async function sendDelivery(id: string, generation: number) {
       const secrets = [await unseal(current.sub.encrypted_secret, key(), current.sub.id)];
       if (current.sub.previous_encrypted_secret && Date.parse(current.sub.rotation_until) > Date.now()) secrets.push(await unseal(current.sub.previous_encrypted_secret, key(), current.sub.id));
       const headers = await signatureHeaders(secrets, current.event.eventId, body, current.sub.id);
-      const response = await pinnedPost(current.sub.callback_url, body, headers, 5000, async () => { await deliveryContext(id, generation); });
+      const response = await publicPost(current.sub.callback_url, body, headers, 5000, async () => { await deliveryContext(id, generation); });
       status = response.status;
     } catch (error) { reason = error instanceof CallbackError ? error.reason : 'delivery_cancelled'; }
     const delivered = status >= 200 && status < 300;

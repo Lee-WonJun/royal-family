@@ -120,7 +120,7 @@ D1에 구독 주체·범위·callback·필터·상태·만료·검증 시점·�
 
 구독의 `delivery.secret`은 `whsec_` 접두사와 디코딩 후 24–64바이트 조건을 검사한다. callback은 HTTPS만 허용하고 redirect를 따르지 않는다. 검증 요청과 실제 전달 모두에서 비공개·로컬·예약 주소 접근을 차단한다.
 
-연결 직전 DNS의 A·AAAA 응답을 모두 검사하고 공개 IP를 고정해 Workers TCP socket으로 연결한다. TLS는 원래 hostname을 검증하며 Host도 유지한다. Node 단위 검증은 차단 주소에 소켓 연결을 만들지 않는 것과 IP·TLS 호스트의 분리를 검사한다. Workers가 특정 목적지 IP의 TCP 연결을 제한할 수 있으므로 실제 ChatGPT callback의 가용성은 최종 연결 검증에서 별도로 확인한다.
+HTTPS·443·인증정보 없는 callback만 허용하고 DNS A·AAAA에 비공개 주소가 섞이면 차단한다. 연결 시점의 비공개 네트워크 차단은 Workers의 네이티브 `fetch`와 `global_fetch_strictly_public` 설정에 맡긴다. DNS 사전 검사만으로 rebinding을 막는다고 주장하지 않는다. redirect는 따라가지 않고 응답은 256 KiB·요청은 5초로 제한한다. 일반 Node fetch로 이 경계를 대체하면 안 된다. [Workers 보안 경계](https://developers.cloudflare.com/workers/reference/security-model/)와 [공개 fetch 설정](https://developers.cloudflare.com/workers/configuration/compatibility-flags/#global-fetch-strictly-public)을 근거로 하며 실제 배포와 ChatGPT callback 연결은 별도로 검증한다.
 
 새 callback에는 짧게 유효한 일회용 challenge를 서명해서 전송한다. 2xx와 동일 challenge 응답을 모두 확인한 뒤 구독을 활성화한다. challenge는 상수 시간으로 비교하고 실패 시 `CallbackEndpointError`(-32015)에 원인을 분류한다. 같은 주체·callback의 검증 성공은 유한한 시간만 재사용한다.
 
