@@ -7,3 +7,6 @@
 # Installed dependencies and temporary presentation build workspaces.
 node_modules/
 /.codex/ppt-build-*/
+
+# Local secrets and their copies stay out of Git and deployment sources.
+/vaults/
