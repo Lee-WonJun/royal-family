@@ -4,6 +4,7 @@
   gap: 28px;
 }
 .parcel-map { min-width: 0; }
+.parcel-stack { min-width: 0; }
 .parcel-map-toolbar, .parcel-map-tools, .parcel-map-caption {
   display: flex;
   align-items: center;
@@ -11,6 +12,7 @@
   gap: 4px;
 }
 .parcel-map-toolbar { justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.parcel-map-tools select { width: auto; min-height: 44px; min-width: 150px; max-width: 100%; font-size: 14px; }
 .parcel-map-toolbar button {
   min-height: 44px;
   min-width: 44px;
@@ -37,6 +39,20 @@
 .parcel-map-warning { margin-top: 8px; font-size: 13px; color: #795214; }
 .parcel-osm-canvas .maplibregl-ctrl-attrib { font-size: 11px; line-height: 1.5; max-width: 240px; }
 .parcel-map-stage .parcel-boundary { z-index: 1; }
+.registry-result { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 18px; }
+.registry-result-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.registry-result h3 { font-size: 16px; margin: 0; }
+.registry-outcome { margin: 12px 0; font-weight: 600; color: #27553f; }
+.registry-outcome.registry-error { color: #924227; }
+.registry-owner-change { display: grid; gap: 10px; margin-bottom: 12px; }
+.registry-owner-change span { color: var(--muted); font-size: 13px; }
+.registry-owner-change p { margin: 3px 0 0; }
+.registry-owner-change strong { display: block; margin-top: 3px; }
+.registry-evidence { margin-top: 10px; font-size: 14px; }
+.registry-evidence summary { cursor: pointer; min-height: 44px; padding: 12px 0; }
+.registry-evidence section { margin-bottom: 12px; }
+.registry-evidence h4 { margin: 0 0 8px; }
+.registry-evidence pre { white-space: pre-wrap; overflow-wrap: anywhere; font-family: inherit; background: #f6f8f6; padding: 12px; line-height: 1.65; }
 @media (max-width: 1200px) {
   .asset-sheet.parcel-sheet { grid-template-columns: minmax(0, 1fr); gap: 16px; }
 }

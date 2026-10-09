@@ -1,6 +1,7 @@
 (ns royal.ui.workflows
   (:require [uix.core :as uix :refer [defui $]] [clojure.string :as str]
             [royal.ui.parcel-map :refer [parcel-map]] [royal.parcels :as parcels]
+            [royal.ui.registry :as registry] [royal.assets :as asset-rules]
             [royal.ui.meeting-panel :refer [meeting-panel]] [royal.accounting :as accounting]
             [royal.ui.components :as c :refer [icon button badge status tabs field val-of won find-id latest]]))
 
@@ -91,6 +92,7 @@
   (let [[tab set-tab] (uix/use-state :land)
         assets (get-in data [:assets :items]) a (first assets)
         snapshots (get-in data [:assets :snapshots]) current (last (filter #(= (:id a) (:asset_id %)) snapshots))
+        registry-record (:record (asset-rules/registry-status (:assets data) (:id a)))
         txs (get-in data [:accounting :transactions])
         active-ids (set (map :id (accounting/active-transactions (:accounting data))))
         {:keys [income expense]} (accounting/summary (:accounting data))]
@@ -101,15 +103,18 @@
          :land ($ :section {:class "land-section"}
                   ($ :div {:class "section-toolbar"} ($ :h2 (:name a)) ($ button {:on-click #(open-dialog :asset-snapshot current)} "후속 자료 등록"))
                   ($ :div {:class "asset-sheet parcel-sheet"}
-                     ($ parcel-map {:key (str (:id a) "-" (:generation data)) :asset a :generation (:generation data)})
+                     ($ :div {:class "parcel-stack"}
+                        ($ parcel-map {:key (str (:id a) "-" (:generation data)) :asset a :generation (:generation data)
+                                       :actions ($ registry/controls {:asset a :busy busy :command command})})
+                        ($ registry/result {:data data :asset a}))
                      ($ :dl {:class "definition-list"} ($ :dt "소재지") ($ :dd (:parcel a))
                         ($ :dt "필지 번호") ($ :dd {:class "parcel-pnu"} (or (parcels/pnu-for a) "미등록"))
-                        ($ :dt "소유자 표시") ($ :dd (:owner_name current))
+                        ($ :dt "등기 소유자") ($ :dd (:owner_name registry-record) " " ($ badge "목업"))
                         ($ :dt "지목·면적") ($ :dd (str (:land_category current) " · " (.toLocaleString (:area_m2 current) "ko-KR") "㎡"))
-                        ($ :dt "자료 출처") ($ :dd ($ :a {:class "parcel-reference-link" :href "https://www.kgeop.go.kr/info/infoMap.do?initMode=L" :target "_blank" :rel "noreferrer"} "K-GeoP 공개 자료"))
-                        ($ :dt "확인일") ($ :dd (subs (:last_checked_at a) 0 10))
+                        ($ :dt "자료 출처") ($ :dd ($ :a {:class "parcel-reference-link" :href "https://www.kgeop.go.kr/info/infoMap.do?initMode=L" :target "_blank" :rel "noreferrer"} "토지 · K-GeoP 공개 자료") ($ :p {:class "muted small"} "등기부 · 시연 목업"))
+                        ($ :dt "토지 확인일") ($ :dd (subs (:last_checked_at a) 0 10))
                         ($ :dt "확인 상태") ($ :dd ($ status {:value (if (= "failed" (:check_status a)) "failed" "기준 자료")}))))
-                  ($ :p {:class "muted small source-note"} "필지 경계는 K-GeoP 공개 좌표입니다. 소유자·면적 표시는 시연용 기준 자료이며 소유권 판단은 등기·원문 확인이 필요합니다.")
+                  ($ :p {:class "muted small source-note"} "지도는 공개 필지 경계입니다. 등기부 재조회·소유자 변경·알림은 목업이며 실제 등기 발급·결제·소유권 변동이 아닙니다.")
                   ($ :h2 {:class "section-gap"} "연결 계약")
                   (for [contract (get-in data [:assets :contracts])]
                     ($ :button {:key (:id contract) :class "task-row" :on-click #(do (select-doc (:document_id contract)) (navigate :records))}
@@ -139,7 +144,7 @@
                      (if (seq (get-in data [:assets :changes]))
                        (for [change (reverse (get-in data [:assets :changes]))]
                          ($ :div {:class "change-row" :key (:id change)}
-                            ($ :div {:class "section-label"} ($ :h3 "토지 자료 표시 변경") ($ badge "시연 변경"))
+                            ($ :div {:class "section-label"} ($ :h3 (if (= "mock_registry" (:source_kind change)) "등기 소유자 변경" "토지 자료 표시 변경")) ($ badge "목업 변경"))
                             ($ :p {:class "muted small"} (str "v" (:from_version change) " → v" (:to_version change)))
                             (for [f (:changed_fields change)] ($ :div {:key f :class "comparison"}
                                                                   ($ :span {:class "muted"} (get {:owner_name "소유자" :owner_type "소유구분" :area_m2 "면적" :land_category "지목"} (keyword f)))

@@ -66,12 +66,18 @@
       "consent.respond" (let [r (c/find! (meetings/requests (:meetings state)) (:request_id p))
                               d (docs/record! (:documents state) (:document_id r))]
                           (update state :meetings meetings/consent ctx p (:version d)))
-      "notification.read" (update-in state [:meetings :notifications]
-                                      (fn [items] (mapv #(if (= (:id %) (:id p)) (assoc % :state "read") %) items)))
+      "notification.read" (if (assets/registry-notification? (:assets state) (:id p))
+                            (update state :assets assets/read-notification (:id p))
+                            (update-in state [:meetings :notifications]
+                                       (fn [items] (mapv #(if (= (:id %) (:id p)) (assoc % :state "read") %) items))))
       "asset.snapshot" (let [{:keys [assets event]} (assets/record-snapshot (:assets state) ctx p)]
                          (cond-> (assoc state :assets assets) event
                            (update :outbox conj {:id (:id ctx) :event event :status "mock_recorded" :mode "mock" :generation (:generation state)})))
       "asset.failure" (update state :assets assets/record-failure ctx p)
+      "asset.registry.mock-refresh" (let [{:keys [assets event]} (assets/refresh-registry-mock (:assets state) ctx p)]
+                                      (cond-> (assoc state :assets assets) event
+                                        (update :outbox conj {:id (:id ctx) :event event :status "mock_recorded"
+                                                             :mode "mock" :generation (:generation state)})))
       "preparation.save" (update state :legal legal/preparation ctx p)
       "consultation.prepare" (do (evidence! state (:documents p)) (update state :legal legal/consultation ctx p))
       "settings.set" (let [feature (keyword (:feature p)) mode (:mode p)]

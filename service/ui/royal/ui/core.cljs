@@ -6,13 +6,14 @@
             [royal.ui.ai :as ai]
             [royal.ui.transport :as transport :refer [request-json post-json]]))
 
-(defui sidebar [{:keys [page navigate open-settings open-search open-notifications open-profile persona]}]
+(defui sidebar [{:keys [page navigate open-settings open-search open-notifications open-profile persona unread-count]}]
   ($ :<>
      ($ :div {:class "brand"} ($ icon {:name :document :size 23}) ($ :span "명문가"))
      ($ :div {:class "clan-select"} ($ :span "임영대군파 종중") ($ badge "시연"))
      ($ :div {:class "utility-nav"}
         ($ :button {:on-click open-search} ($ icon {:name :search}) ($ :span "검색") ($ :kbd "Ctrl K"))
-        ($ :button {:on-click open-notifications} ($ icon {:name :bell}) ($ :span "알림"))
+        ($ :button {:on-click open-notifications} ($ icon {:name :bell}) ($ :span "알림")
+           (when (pos? (or unread-count 0)) ($ badge unread-count)))
         ($ :button {:on-click open-profile} ($ icon {:name :user}) ($ :span "내 프로필")))
      ($ :nav {:class "primary-nav" :aria-label "주 메뉴"}
         (for [[id icon-name label] c/nav-items]
@@ -168,7 +169,9 @@
                               {:id (:id job) :kind :ai :label (str "AI " (get ai/phases (:phase job) "처리 중") (when (> (count active-jobs) 1) (str " · " (count active-jobs) "건")))})
         props {:data data :busy busy :command command :navigate navigate :open-dialog open-dialog :select-doc select-document :request-query request-query
                :start-ai start-ai :resume-ai resume-ai :ai-drafts ai-drafts :set-ai-drafts set-ai-drafts}
-        side-props {:page page :persona persona :navigate navigate :open-settings #(do (set-settings true) (set-menu false))
+        side-props {:page page :persona persona :navigate navigate
+                    :unread-count (count (filter #(= "unread" (:state %)) (concat (get-in data [:assets :notifications]) (get-in data [:meetings :notifications]))))
+                    :open-settings #(do (set-settings true) (set-menu false))
                     :open-search #(do (open-dialog :search) (set-menu false)) :open-notifications #(do (open-dialog :notifications) (set-menu false))
                     :open-profile #(do (open-dialog :profile) (set-menu false))}]
     (uix/use-effect (fn [] (load)
@@ -226,9 +229,13 @@
                            ($ :button {:key (:id d) :class "task-row" :on-click #(do (set-selected-doc (:id d)) (navigate :records) (set-modal nil))}
                               ($ :div ($ :strong (:title d)) ($ :p {:class "muted small"} (str (:kind d) " · v" (:version d)))) ($ icon {:name :chevron})))))
            :notifications ($ c/dialog {:title "알림" :on-close #(set-modal nil)}
-                             (for [n (get-in data [:meetings :notifications])]
-                               ($ :button {:key (:id n) :class "task-row" :on-click #(do (command "notification.read" {:id (:id n)} "알림을 확인했습니다.") (navigate :consent) (set-modal nil))}
-                                  ($ :div ($ :strong (:title n)) ($ :p {:class "muted small"} "동의 요청 · 시연")) ($ badge (if (= "read" (:state n)) "읽음" "안 읽음")))))
+                             (for [n (sort-by :at #(compare %2 %1) (concat (get-in data [:assets :notifications]) (get-in data [:meetings :notifications])))]
+                               ($ :button {:key (:id n) :class "task-row" :on-click #(do (command "notification.read" {:id (:id n)} "알림을 확인했습니다.")
+                                                                                       (navigate (if (= "registry_owner_changed" (:kind n)) :assets :consent)) (set-modal nil))}
+                                  ($ :div ($ :strong (:title n))
+                                     ($ :p {:class "muted small"} (if (= "registry_owner_changed" (:kind n))
+                                                                   (str (:before_owner n) " → " (:after_owner n)) "동의 요청 · 시연")))
+                                  ($ badge (if (= "read" (:state n)) "읽음" "안 읽음")))))
            :profile ($ c/dialog {:title "내 프로필" :on-close #(set-modal nil)}
                         ($ :div {:class "profile-detail"} ($ :span {:class "avatar large"} "이") ($ :h3 (:name persona)) ($ badge (:role persona)))
                         ($ :dl {:class "definition-list"} ($ :dt "종중") ($ :dd "임영대군파 종중") ($ :dt "권장 시나리오") ($ :dd (:scenario persona))

@@ -1,7 +1,6 @@
 (ns royal.ui.parcel-map
   (:require [uix.core :as uix :refer [defui $]]
-            [royal.parcels :as parcels]
-            [royal.ui.components :refer [button]]))
+            [royal.parcels :as parcels]))
 
 (defonce library-loader (atom nil))
 (defn configure-loader! [loader] (reset! library-loader loader))
@@ -58,33 +57,16 @@
        (for [[i path] (map-indexed vector paths)]
          ($ :path {:key i :d path :class "parcel-boundary-shape" :fill-rule "evenodd" :vector-effect "non-scaling-stroke"})))))
 
-(defui parcel-map [{:keys [asset generation]}]
+(defui parcel-map [{:keys [asset generation actions]}]
   (let [pnu (parcels/pnu-for asset)
         [feature set-feature] (uix/use-state nil)
         [error set-error] (uix/use-state nil)
         [warning set-warning] (uix/use-state nil)
         [ready? set-ready] (uix/use-state false)
         [map-failed? set-map-failed] (uix/use-state false)
-        [refreshing? set-refreshing] (uix/use-state false)
         node (uix/use-ref nil) instance (uix/use-ref nil)
-        latest-feature (uix/use-ref nil) refresh-controller (uix/use-ref nil)
-        has-feature? (boolean feature)
-        refresh! (fn []
-                   (when-not @refresh-controller
-                     (let [controller (js/AbortController.)]
-                       (reset! refresh-controller controller)
-                       (set-refreshing true) (set-error nil)
-                       (-> (fetch-json "/api/land/parcel"
-                                       {:method "POST" :headers {"Content-Type" "application/json"}
-                                        :signal (.-signal controller) :body (js/JSON.stringify #js {:pnu pnu})})
-                           (.then (fn [result]
-                                    (let [f (js->clj (aget result "feature") :keywordize-keys true)]
-                                      (parcels/polygons f pnu)
-                                      (when-not (.. controller -signal -aborted) (set-feature f)))))
-                           (.catch (fn [e] (when-not (.. controller -signal -aborted) (set-error (str (.-message e) " 기존 경계를 유지합니다.")))))
-                           (.finally (fn []
-                                       (when (= controller @refresh-controller)
-                                         (reset! refresh-controller nil) (set-refreshing false))))))))]
+        latest-feature (uix/use-ref nil)
+        has-feature? (boolean feature)]
     (uix/use-effect
       (fn []
         (let [controller (js/AbortController.)]
@@ -97,9 +79,7 @@
                            (when-not (.. controller -signal -aborted) (set-feature f)))))
                 (.catch (fn [e] (when-not (.. controller -signal -aborted) (set-error (.-message e))))))
             (set-error "이 토지의 필지 경계는 아직 등록되지 않았습니다."))
-          (fn [] (.abort controller)
-            (when-let [request @refresh-controller] (.abort request))
-            (reset! refresh-controller nil)))) [pnu generation])
+          #(.abort controller))) [pnu generation])
     (reset! latest-feature feature)
     (uix/use-effect
       (fn []
@@ -123,7 +103,7 @@
        ($ :div {:class "parcel-map-toolbar"}
           ($ :strong "필지 지도")
           ($ :div {:class "parcel-map-tools"}
-             ($ button {:disabled (or (nil? pnu) refreshing?) :icon-name :refresh :on-click refresh!} (if refreshing? "조회 중…" "재조회"))
+             actions
              ($ :button {:type "button" :disabled (not ready?) :on-click #(when-let [fit (:fit @instance)] (fit))} "전체 경계")))
        ($ :div {:class "parcel-map-stage" :aria-busy (not (or ready? map-failed? warning error))}
           ($ :div {:ref node :class "parcel-osm-canvas" :aria-label "OpenStreetMap 위 실제 필지 경계"})
@@ -137,6 +117,5 @@
        (when (or error warning) ($ :p {:class "parcel-map-warning" :role "status"} (or error warning)))
        ($ :div {:class "parcel-map-caption" :aria-live "polite"}
           ($ :span "필지 경계 · K-GeoP")
-          (when feature ($ :span (str (if (= "live" (get-in feature [:properties :data_mode])) "재조회 " "저장 자료 · ")
-                                      (.toLocaleString (js/Date. (get-in feature [:properties :retrieved_at])) "ko-KR" #js {:timeZone "Asia/Seoul"})))))
+          (when feature ($ :span (str "경계 자료 · " (subs (get-in feature [:properties :retrieved_at]) 0 10)))))
        ($ :p {:class "parcel-map-source"} "공개 경계 참고용 · 경계·소유권 확정용 측량 자료 아님"))))

@@ -22,6 +22,7 @@ const payloads: Record<string, z.ZodTypeAny> = {
   "notification.read": z.object({ id }).strict(),
   "asset.snapshot": z.object({ asset_id: id, parcel: text, source_kind: text, owner_name: text, owner_type: text, area_m2: z.number(), land_category: text }).strict(),
   "asset.failure": z.object({ asset_id: id }).strict(),
+  "asset.registry.mock-refresh": z.object({ asset_id: id, scenario: z.enum(["changed", "unchanged", "failure"]) }).strict(),
   "preparation.save": z.object({ task: text, held: z.array(text), note: text.optional() }).strict(),
   "consultation.prepare": z.object({ expert_id: id, documents: z.array(docRef), question: text }).strict(),
   "settings.set": z.object({ feature: text, mode: z.enum(["mock", "live"]) }).strict(),

@@ -58,6 +58,8 @@ MCP의 업무 호출도 [기능별 설정](system-design.md#settings)을 따른�
 <a id="event"></a>
 ## 첫 이벤트: asset.record.updated
 
+등기부 재조회는 `asset.registry.mock-refresh`로 목업 등기를 비교한다. 소유자 변경이 있으면 `source_kind=mock_registry`와 이전·새 등기 ID를 포함한 이 이벤트, 변경 기록, 읽지 않은 앱 알림을 함께 저장한다. `get_asset_changes`로 비교 근거를 조회할 수 있다. 동일값·반복 결과·실패·최초 등기 기준 등록은 이벤트를 만들지 않는다. outbox의 `mock_recorded`는 실제 문자·ChatGPT 수신 확인이 아니다.
+
 `assets`가 비교 가능한 후속 자료에서 바뀐 필드를 저장했을 때 발생한다. 저장소의 자료 변화이며 실제 소유권 이전을 법적으로 확인했다는 선언이 아니다. 소유자만 감시하는 구독은 `fields: ["owner_name"]`으로 필터링한다.
 
 | 이벤트 정의 | 계약 |
