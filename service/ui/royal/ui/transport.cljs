@@ -17,12 +17,12 @@
    (let [controller (js/AbortController.) signal (:signal options)
          timed-out (atom false)
          abort #(.abort controller)
-         timer (js/setTimeout #(do (reset! timed-out true) (abort)) timeout-ms)]
+         timer (js/setTimeout #(do (reset! timed-out true) (abort)) (or (:timeout-ms options) timeout-ms))]
      (when signal
        (.addEventListener signal "abort" abort #js {:once true})
        (when (.-aborted signal) (abort)))
      (-> (js/Promise.resolve nil)
-         (.then #(fetch-fn url (clj->js (assoc options :signal (.-signal controller)))))
+         (.then #(fetch-fn url (clj->js (assoc (dissoc options :timeout-ms) :signal (.-signal controller)))))
          (.then (fn [r]
                   (-> (.json r)
                       (.catch (fn [_] (throw (error "invalid_response" "응답을 확인하지 못했습니다. 연결 상태를 확인해 주세요." (.-status r)))))

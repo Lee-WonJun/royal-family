@@ -25,6 +25,8 @@ const payloads: Record<string, z.ZodTypeAny> = {
   "settings.set": z.object({ feature: text, mode: z.enum(["mock", "live"]) }).strict(),
   "ai.mock": z.object({ feature: text, title: text, instructions: text.optional(), kind: text.optional(), evidence: z.array(docRef).optional(), fixture: z.enum(["success", "failure"]).optional() }).strict(),
   "reset": z.object({}).strict(),
+  "ai.cancel": z.object({ id }).strict(),
+  "ai.apply": z.object({ id, document_id: id.optional(), expected_version: version.optional() }).strict(),
 };
 export const commandSchema = z.object({ command: z.string().max(60), payload: z.record(z.unknown()),
   expected_revision: z.number().int().nonnegative(), generation: version,

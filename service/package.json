@@ -16,7 +16,8 @@
     "prebuild": "npm run cljs:build",
     "test:unit": "node scripts/unit-tests.mjs",
     "typecheck": "tsc --noEmit",
-    "test:access": "node --test test/access.test.mjs"
+    "test:access": "node --test test/access.test.mjs",
+    "test:openai": "node --test test/openai.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

@@ -1,7 +1,7 @@
 (ns royal.domain
   (:require [royal.common :as c] [royal.seed :as seed] [royal.organization :as org]
             [royal.documents :as docs] [royal.meetings :as meetings] [royal.assets :as assets]
-            [royal.accounting :as accounting] [royal.legal-support :as legal]
+            [royal.accounting :as accounting] [royal.legal-support :as legal] [royal.ai-workflows :as ai]
             [clojure.string :as str]))
 
 (defn initial-state-js [generation] (clj->js (seed/initial-state (or generation 1))))
@@ -74,6 +74,18 @@
                          (c/ensure! (#{"mock" "live"} mode) :invalid_input "호출 모드를 확인해 주세요.")
                          (when (= mode "live") (c/ensure! (true? (get-in ctx [:readiness feature])) :external_unavailable "실제 연결 준비가 필요합니다."))
                          (assoc-in state [:settings :features feature] mode))
+      "ai.start" (let [feature (keyword (:feature p)) mode (if (:force_mock ctx) "mock" (get-in state [:settings :features feature] "mock"))]
+                   (ai/worker! ctx) (evidence! state (:evidence p))
+                   (when (= "live" mode) (c/ensure! (true? (get-in ctx [:readiness feature])) :external_unavailable "실제 연결 준비가 필요합니다."))
+                   (update state :jobs ai/start ctx p mode (:generation state)))
+      "ai.update" (let [job (ai/job! (:jobs state) (:id p))]
+                    (when (= "finish" (:action p)) (evidence! state (:input_versions job)) (ai/validate-evidence! job (:result p)))
+                    (update state :jobs ai/update-job ctx p))
+      "ai.cancel" (update state :jobs ai/cancel ctx p)
+      "ai.apply" (let [job (ai/result! (:jobs state) p)]
+                   (evidence! state (:input_versions job))
+                   (-> state (update :documents docs/apply-ai ctx job p)
+                       (update :jobs c/replace-item (assoc job :applied_document_id (or (:document_id p) (:id ctx)) :applied_at (:now ctx)))))
       "ai.mock" (let [feature (keyword (:feature p)) _ (c/ensure! (contains? seed/feature-labels feature) :invalid_input "기능을 찾을 수 없습니다.")
                       _ (c/ensure! (or (:force_mock ctx) (= "mock" (get-in state [:settings :features feature]))) :external_unavailable "실제 연결 경로를 사용해 주세요.")
                       _ (evidence! state (:evidence p))

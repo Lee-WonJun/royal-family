@@ -3,6 +3,7 @@
             [royal.ui.components :as c :refer [icon button badge tabs val-of latest]]
             [royal.ui.members :as members] [royal.ui.records :as records] [royal.ui.workflows :as workflows]
             [royal.ui.legal :as legal] [royal.ui.dialogs :as dialogs] [royal.ui.accounts :as accounts]
+            [royal.ui.ai :as ai]
             [royal.ui.transport :as transport :refer [request-json post-json]]))
 
 (defui sidebar [{:keys [page navigate open-settings open-search open-notifications open-profile persona]}]
@@ -26,11 +27,14 @@
         [menu-open set-menu] (uix/use-state false) [settings-open set-settings] (uix/use-state false)
         [modal set-modal] (uix/use-state nil) [toast set-toast] (uix/use-state nil) [operation set-operation] (uix/use-state nil)
         [selected-doc set-selected-doc] (uix/use-state "doc01") [drafts set-drafts] (uix/use-state {})
+        [ai-drafts set-ai-drafts] (uix/use-state {})
+        [doc-request set-doc-request] (uix/use-state nil)
         [search set-search] (uix/use-state "") [personas set-personas] (uix/use-state [])
         [persona set-persona] (uix/use-state nil) [initialized set-initialized] (uix/use-state false)
         [access set-access] (uix/use-state {:unlocked false :configured false :ready_features []})
         busy-ref (uix/use-ref nil) data-ref (uix/use-ref nil) epoch (uix/use-ref 0)
         load-controller (uix/use-ref nil) retries (uix/use-ref {})
+        running-requests (uix/use-ref #{})
         busy (some? operation)
         notify (fn [value] (set-toast (assoc value :id (str (random-uuid)))))
         dismiss-toast (uix/use-callback #(set-toast nil) [])
@@ -51,6 +55,9 @@
         navigate (fn [p] (set-page p) (set-menu false)
                    (when (exists? js/window) (set! (.. js/window -location -hash) (name p))))
         open-dialog (uix/use-callback (fn ([kind] (set-toast nil) (set-modal {:kind kind})) ([kind item] (set-toast nil) (set-modal {:kind kind :item item}))) [])
+        select-document (fn
+                          ([id] (set-selected-doc id) (set-doc-request {:id (str (random-uuid)) :version nil}))
+                          ([id version] (set-selected-doc id) (set-doc-request {:id (str (random-uuid)) :version version})))
         begin (fn [op]
                 (if @busy-ref
                   (do (notify {:text "다른 작업을 처리 중입니다. 완료 후 다시 시도해 주세요." :error true}) nil)
@@ -66,7 +73,7 @@
                                    (when (= token @epoch)
                                      (apply-state (:state r) token) (swap! retries dissoc key) (notify {:text message})
                                      (when (= op "reset")
-                                       (swap! epoch inc) (reset! retries {}) (set-drafts {}) (set-page :home)
+                                       (swap! epoch inc) (reset! retries {}) (set-drafts {}) (set-ai-drafts {}) (set-page :home)
                                        (set-selected-doc "doc01") (set-settings false)
                                        (set-access #(assoc % :unlocked false :expires_at nil)))) true))
                           (.catch (fn [e]
@@ -110,14 +117,14 @@
                    (do (swap! epoch inc) (set-error nil)
                        (-> (post-json "/api/session" {:persona_id (:id p)})
                            (.then (fn [_] (set-persona p) (set-access #(assoc % :unlocked false))
-                                    (navigate (keyword (:page p))) (set-drafts {}) (reset! retries {}) (load)))
+                                    (navigate (keyword (:page p))) (set-drafts {}) (set-ai-drafts {}) (reset! retries {}) (load)))
                            (.catch #(set-error (.-message %))) (.finally #(finish id)))) (js/Promise.resolve false)))
         change-account (fn []
                          (if-let [id (begin {:kind :session :label "계정 변경 중"})]
                            (do (swap! epoch inc)
                                (-> (request-json "/api/session" {:method "DELETE"})
                                    (.then (fn [_] (set-persona nil) (set-access #(assoc % :unlocked false)) (set-settings false)
-                                            (set-modal nil) (set-menu false) (set-toast nil) (set-drafts {}) (reset! retries {})))
+                                            (set-modal nil) (set-menu false) (set-toast nil) (set-drafts {}) (set-ai-drafts {}) (reset! retries {})))
                                    (.catch #(notify {:text (.-message %) :error true})) (.finally #(finish id)))) (js/Promise.resolve false)))
         unlock (fn [code] (let [token @epoch]
                             (-> (post-json "/api/ai-access" {:code code})
@@ -126,7 +133,41 @@
                       (-> (request-json "/api/ai-access" {:method "DELETE"})
                           (.then #(when (= token @epoch) (set-access (:access %))))
                           (.catch #(notify {:text (.-message %) :error true})))))
-        props {:data data :busy busy :command command :navigate navigate :open-dialog open-dialog :select-doc set-selected-doc :request-query request-query}
+        resume-ai (fn [job]
+                    (if (contains? @running-requests (:id job)) (js/Promise.resolve false)
+                      (let [token @epoch]
+                        (swap! running-requests conj (:id job))
+                        (-> (post-json "/api/ai" {:action "run" :id (:id job) :generation (:dataset_generation job)} {:timeout-ms 300000})
+                            (.then (fn [r]
+                                     (when (= token @epoch)
+                                       (apply-state (:state r) token)
+                                       (case (get-in r [:job :status])
+                                         "completed" (notify {:text "AI 결과가 준비됐습니다. 검토 후 문서에 반영해 주세요."
+                                                              :retry #(navigate :records) :retry-label "기록 열기"})
+                                         "failed" (notify {:text (get-in r [:job :error :message]) :error true}) nil)) true))
+                            (.catch (fn [e] (when (= token @epoch) (notify {:text (str (.-message e) " AI 작업 기록에서 상태를 확인해 주세요.") :error true})) false))
+                            (.finally #(swap! running-requests disj (:id job)))))))
+        start-ai (fn start-ai
+                   ([input] (start-ai input (str (random-uuid))))
+                   ([input key]
+                    (if-let [id (begin {:kind :save :label "AI 작업 등록 중"})]
+                      (let [token @epoch generation (:generation @data-ref)]
+                        (-> (post-json "/api/ai" (assoc input :generation generation :idempotency_key key))
+                            (.then (fn [r] (when (= token @epoch)
+                                            (apply-state (:state r) token)
+                                            (if (:reused r) (notify {:text "같은 입력의 이전 결과를 불러왔습니다."})
+                                              (do (notify {:text "AI 작업을 시작했습니다. 화면을 이동해도 작업은 이어집니다."})
+                                                  (resume-ai (:job r))))) true))
+                            (.catch (fn [e] (when (= token @epoch)
+                                              (notify (cond-> {:text (.-message e) :error true}
+                                                        (transport/uncertain? e) (assoc :retry #(start-ai input key) :retry-label "작업 확인")))) false))
+                            (.finally #(finish id)))) (js/Promise.resolve false))))
+        active-jobs (filter ai/active? (:jobs data))
+        has-jobs (boolean (seq active-jobs))
+        background-activity (when-let [job (first active-jobs)]
+                              {:id (:id job) :kind :ai :label (str "AI " (get ai/phases (:phase job) "처리 중") (when (> (count active-jobs) 1) (str " · " (count active-jobs) "건")))})
+        props {:data data :busy busy :command command :navigate navigate :open-dialog open-dialog :select-doc select-document :request-query request-query
+               :start-ai start-ai :resume-ai resume-ai :ai-drafts ai-drafts :set-ai-drafts set-ai-drafts}
         side-props {:page page :persona persona :navigate navigate :open-settings #(do (set-settings true) (set-menu false))
                     :open-search #(do (open-dialog :search) (set-menu false)) :open-notifications #(do (open-dialog :notifications) (set-menu false))
                     :open-profile #(do (open-dialog :profile) (set-menu false))}]
@@ -144,6 +185,17 @@
          (let [timer (js/setTimeout #(set-access (fn [current] (assoc current :unlocked false :expires_at nil)))
                                     (max 0 (- expiry (js/Date.now))))]
            #(js/clearTimeout timer)) js/undefined)) [access])
+    (uix/use-effect
+     (fn []
+       (if (and has-jobs persona)
+         (let [controller (js/AbortController.) timer (atom nil) token @epoch
+               poll (fn poll []
+                      (-> (request-json "/api/ai" {:signal (.-signal controller)})
+                          (.then #(when (= token @epoch) (apply-state (:state %) token)))
+                          (.catch (fn [_] nil))
+                          (.finally #(when-not (.-aborted (.-signal controller)) (reset! timer (js/setTimeout poll 1500))))))]
+           (reset! timer (js/setTimeout poll 1200))
+           #(do (.abort controller) (js/clearTimeout @timer))) js/undefined)) [has-jobs (:generation data) persona apply-state])
     (cond
       (not initialized) ($ :main {:class "account-screen"} ($ :div {:class "account-content"} ($ c/skeleton {:label "시연 계정 불러오는 중" :rows 5})))
       (and (nil? persona) (seq personas)) ($ accounts/account-picker {:personas personas :choose choose :busy busy :pending-id (:persona-id operation) :error error})
@@ -157,7 +209,7 @@
                 (nil? data) ($ :div {:class "load-state" :role "status"} ($ :div {:class "loading-bar"}) "자료 불러오는 중")
                 :else (case page
                         :members ($ members/members-page props)
-                        :records ($ records/records-page (merge props {:upload upload :selected selected-doc :select set-selected-doc :drafts drafts :set-drafts set-drafts}))
+                        :records ($ records/records-page (merge props {:upload upload :selected selected-doc :select select-document :doc-request doc-request :drafts drafts :set-drafts set-drafts}))
                         :consent ($ workflows/consent-page props)
                         :assets ($ workflows/assets-page props)
                         :preparation ($ legal/preparation-page props)
@@ -182,6 +234,6 @@
                         ($ :dl {:class "definition-list"} ($ :dt "종중") ($ :dd "임영대군파 종중") ($ :dt "권장 시나리오") ($ :dd (:scenario persona))
                            ($ :dt "접근 범위") ($ :dd "시연 관리 기능"))
                         ($ button {:disabled busy :on-click change-account} "계정 변경"))
-           ($ dialogs/form-dialog {:key (name (:kind modal)) :kind (:kind modal) :item (:item modal) :data data :command command :feedback toast :on-close #(set-modal nil)})))
-       ($ c/activity {:operation operation})
+           ($ dialogs/form-dialog {:key (name (:kind modal)) :kind (:kind modal) :item (:item modal) :data data :command command :start-ai start-ai :feedback toast :on-close #(set-modal nil)})))
+       ($ c/activity {:operation (or operation background-activity)})
        (when (and toast (not modal) (not settings-open)) ($ c/notification {:key (:id toast) :toast toast :dismiss dismiss-toast}))))))

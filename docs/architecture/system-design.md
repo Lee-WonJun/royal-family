@@ -140,12 +140,13 @@ D1에는 업무 객체·문서 메타데이터·AI 작업·감사 기록·구독
 | 작업 | 선택한 경로 | 결과와 확인 |
 | --- | --- | --- |
 | 녹음 전사 | OpenAI Audio Transcriptions, `whisper-1` 기본 | 한국어 전사와 지원되는 구간 정보. 화자·인명·금액의 확정은 담당자가 함 |
-| 사진·문서 구조화 | Responses + `gpt-6-luna`, Structured Outputs | 문서 종류·필드·원문 위치·미확인 항목. 빈 값과 추측을 구분 |
-| 근거 검색 | File Search + `gpt-6-luna` | 권한 범위의 문서·버전·인용, 근거 없음·상충 상태 |
-| 초안·추천 설명 | Responses + `gpt-6-luna` | 확인된 기록과 후보 데이터에 근거한 초안. 없는 정보는 보완 항목 |
+| 생성 모델 선택 | Decisions + `gpt-6-luna` | Luna 또는 `gpt-6.1-sol` 선택. Astra 제외. 실패 시 임의 모델로 우회하지 않음 |
+| 사진·문서 구조화 | Responses + 선택 모델, Structured Outputs | 문서 종류·필드·원문 위치·미확인 항목. 빈 값과 추측을 구분 |
+| 근거 검색 | File Search + 선택 모델 | 권한 범위의 문서·버전·인용, 근거 없음·상충 상태 |
+| 초안·추천 설명 | Responses + 선택 모델 | 확인된 기록과 후보 데이터에 근거한 초안. 없는 정보는 보완 항목 |
 | 다음 작업 선택 | Decisions API + `gpt-6-luna`의 `choice` | `draft`, `request_information`, `expert_review` 중 제안. 법적 유효성·범죄 여부를 판정하지 않음 |
 
-모델 선택은 제출서의 Luna·Whisper 계획을 구체화한 기본값이다. 서비스에서 비 OpenAI 모델로 조용히 대체하지 않는다. 원자료의 로컬 전사 도구 사용 이력은 인터뷰 자료의 이력이며 서비스 실행 스택이 아니다. [Luna 지원 기능](https://developers.openai.com/api/docs/models/gpt-6-luna), [전사 안내](https://developers.openai.com/api/docs/guides/speech-to-text), [Decisions](https://developers.openai.com/api/docs/guides/decisions).
+모델 선택은 제출서의 Luna·Whisper 계획과 사용자의 Luna Decisions 라우팅 결정을 따른다. [AI 실행 계약](ai-runtime.md)과 [비동기 화면 계약](async-interactions.md)을 함께 적용한다. 서비스에서 비 OpenAI 모델로 조용히 대체하지 않는다. 원자료의 로컬 전사 도구 사용 이력은 인터뷰 자료의 이력이며 서비스 실행 스택이 아니다. [Luna 지원 기능](https://developers.openai.com/api/docs/models/gpt-6-luna), [전사 안내](https://developers.openai.com/api/docs/guides/speech-to-text), [Decisions](https://developers.openai.com/api/docs/guides/decisions).
 
 위 표는 실제 어댑터의 선택이다. 기본 개발·테스트·데모 시작은 기능별 mock 응답을 사용한다. 성공·부분 추출·근거 없음·권한 거부·색인 대기·429·시간 초과 fixture를 준비해 재사용하고, 요청 schema·결과 상태·근거 연결을 검증한다. 실제 품질·연결 확인만 마지막 단계의 별도 live 사례로 남긴다.
 

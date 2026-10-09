@@ -47,7 +47,10 @@ export async function GET(request: Request) {
     if (!record?.file_id || !record.file_id.startsWith(`${workspaceId}/${state.generation}/`)) throw new AppError("not_found", "원본 파일을 찾을 수 없습니다.", 404);
     const object = await env.BUCKET?.get(record.file_id);
     if (!object) throw new AppError("not_found", "원본 파일을 찾을 수 없습니다.", 404);
-    return new Response(object.body, { headers: { "Content-Type": "application/octet-stream", "Cache-Control": "no-store",
-      "X-Content-Type-Options": "nosniff", "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(record.file_name)}` } });
+    const inline = new URL(request.url).searchParams.get('view') === 'inline' && /\.(mp3|mp4|mpeg|mpga|m4a|wav|webm)$/i.test(record.file_name);
+    const extension = record.file_name.split('.').pop().toLowerCase();
+    const audioTypes: Record<string, string> = { mp3: 'audio/mpeg', mpga: 'audio/mpeg', mpeg: 'audio/mpeg', mp4: 'audio/mp4', m4a: 'audio/mp4', wav: 'audio/wav', webm: 'audio/webm' };
+    return new Response(object.body, { headers: { "Content-Type": inline ? audioTypes[extension] : "application/octet-stream", "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff", "Content-Disposition": `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(record.file_name)}` } });
   } catch (e) { return errorResponse(e); }
 }

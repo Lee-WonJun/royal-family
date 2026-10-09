@@ -6,13 +6,18 @@ import { sites } from "./build/sites-vite-plugin";
 import { connectorPreview } from "./build/connector-preview-plugin.mjs";
 import { readFileSync } from "node:fs";
 
-function localDeveloperCode(): Record<string, string> {
-  // Read only for local serve. Build output must never contain this value.
-  try {
-    const file = readFileSync(new URL("../vaults/developer/.env", import.meta.url), "utf8");
-    const value = file.match(/^AI_UNLOCK_CODE\s*=\s*([^\r\n]+)$/m)?.[1]?.trim().replace(/^['"]|['"]$/g, "");
-    return value ? { AI_UNLOCK_CODE: value } : {};
-  } catch { return {}; }
+function localServerSecrets(): Record<string, string> {
+  // Only called for local serve. These values must never enter build output.
+  const bindings: Record<string, string> = {};
+  for (const [service, key] of [["developer", "AI_UNLOCK_CODE"], ["openai", "OPENAI_API_KEY"]]) {
+    try {
+      const file = readFileSync(new URL(`../vaults/${service}/.env`, import.meta.url), "utf8");
+      const value = file.match(new RegExp(`^${key}\\s*=\\s*([^\\r\\n]+)$`, "m"))?.[1]?.trim().replace(/^['"]|['"]$/g, "");
+      if (value) bindings[key] = value;
+    } catch { /* Unconfigured adapters stay unavailable. */ }
+  }
+  if (process.env.RF_FORCE_MOCK === "1") bindings.RF_FORCE_MOCK = "1";
+  return bindings;
 }
 
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
@@ -79,7 +84,7 @@ export default defineConfig(async ({ command }) => {
         inspectorPort: false,
         config: {
           ...localBindingConfig,
-          ...(command === "serve" ? { vars: localDeveloperCode() } : {}),
+          ...(command === "serve" ? { vars: localServerSecrets() } : {}),
           ...(command === "serve"
             ? {
                 services: [

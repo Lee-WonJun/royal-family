@@ -1,14 +1,18 @@
 import { env } from "cloudflare:workers";
 import { execute, initialState, query } from "../../generated/domain/main.js";
+import { aiFeatures } from "../../connectors/openai/workflows.mjs";
 
 export type State = Record<string, any>;
 export class AppError extends Error {
   constructor(public code: string, message: string, public status = 400) { super(message); }
 }
 export const workspaceId = "demo_a";
+export function readiness(): Record<string, boolean> {
+  return Object.fromEntries(aiFeatures.map(feature => [feature, !!env.OPENAI_API_KEY && env.RF_FORCE_MOCK !== '1']));
+}
 export function context() {
   return { clan_id: workspaceId, principal_id: "demo_admin", role: "admin",
-    now: new Date().toISOString(), id: crypto.randomUUID(), force_mock: true, readiness: {} };
+    now: new Date().toISOString(), id: crypto.randomUUID(), force_mock: env.RF_FORCE_MOCK === '1', readiness: readiness() };
 }
 function db() {
   if (!env.DB) throw new AppError("storage_unavailable", "저장소에 연결할 수 없습니다.", 503);
@@ -48,9 +52,9 @@ export function publicState(state: State) {
   return unwrap(query(state, context(), { query: "snapshot" }));
 }
 export function runQuery(state: State, input: unknown) { return unwrap(query(state, context(), input)); }
-export async function runCommandDetailed(command: unknown): Promise<{ state: State; object_id: string | null }> {
+export async function runCommandDetailed(command: unknown, overrides: Record<string, unknown> = {}): Promise<{ state: State; object_id: string | null }> {
   const state = await readState();
-  const result = unwrap(execute(state, context(), command));
+  const result = unwrap(execute(state, { ...context(), ...overrides }, command));
   if (result.duplicate) return { state: publicState(state), object_id: result.result_id || null };
   const next = result.state;
   const saved = await db().prepare("UPDATE workspaces SET revision = ?, generation = ?, body = ? WHERE id = ? AND revision = ? AND generation = ?")
@@ -59,6 +63,20 @@ export async function runCommandDetailed(command: unknown): Promise<{ state: Sta
   return { state: publicState(next), object_id: result.result_id || null };
 }
 export async function runCommand(command: unknown): Promise<State> { return (await runCommandDetailed(command)).state; }
+// Internal completion records may rebase across unrelated user edits, but never a reset.
+export async function runInternal(command: string, payload: unknown, generation: number, idempotencyKey: string, id = crypto.randomUUID()) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const state = await readState();
+    if (state.generation !== generation) throw new AppError('stale_generation', '초기화 전 작업입니다.', 409);
+    try {
+      return await runCommandDetailed({ command, payload, generation, expected_revision: state.revision, idempotency_key: idempotencyKey },
+        { trusted_worker: true, id });
+    } catch (error) {
+      if (!(error instanceof AppError) || error.code !== 'version_conflict') throw error;
+    }
+  }
+  throw new AppError('version_conflict', '동시 작업이 많습니다. 잠시 후 다시 확인해 주세요.', 409);
+}
 export function requireSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) throw new AppError("forbidden", "허용되지 않은 요청입니다.", 403);

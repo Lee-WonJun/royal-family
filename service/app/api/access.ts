@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import personas from "../../fixtures/personas.json";
 import { verifyGrant } from "./access-crypto.mjs";
-import { AppError, type State } from "./store";
+import { AppError, type State, readiness } from "./store";
 
 export { personas };
 export function cookieValue(request: Request, name: string): string {
@@ -21,7 +21,8 @@ export async function accessStatus(request: Request, state: State) {
   const token = cookieValue(request, "rf_ai_grant");
   const unlocked = !!persona && await verifyGrant(token, persona.id, state.generation, code);
   return { configured: code.length >= 16, unlocked,
-    expires_at: unlocked ? Number(token.split(":")[2]) : null, ready_features: [] as string[] };
+    expires_at: unlocked ? Number(token.split(":")[2]) : null,
+    ready_features: Object.entries(readiness()).filter(([, ready]) => ready).map(([feature]) => feature) };
 }
 export async function requireAiGrant(request: Request, state: State) {
   if (!(await accessStatus(request, state)).unlocked) throw new AppError("developer_code_required", "실제 호출을 켜려면 개발자 코드를 확인해 주세요.", 403);

@@ -23,6 +23,21 @@
            :created_at (:now ctx) :created_by (:principal_id ctx)
            :evidence (:evidence (latest d)) :unconfirmed (:unconfirmed (latest d))}]
     (update docs :records c/replace-item (-> d (update :version inc) (update :versions conj v)))))
+
+(defn apply-ai [docs ctx job p]
+  (let [result (:result job) origin (:document_id p)]
+    (if origin
+      (let [d (record! docs origin) _ (c/version! d (:expected_version p))
+            _ (c/ensure! (some #(and (= origin (:document_id %)) (= (:expected_version p) (:version %))) (:input_versions job))
+                         :version_conflict "AI가 사용한 원문 버전과 다릅니다. 새 자료로 다시 실행해 주세요.")
+            v {:version (inc (:version d)) :body (c/text! (:body result) "AI 본문") :status "draft"
+               :created_at (:now ctx) :created_by (:principal_id ctx) :evidence (:evidence result)
+               :unconfirmed (:unconfirmed result) :ai_job_id (:id job) :mode (:mode job)
+               :fields (:fields result) :segments (:segments result)}
+            next (cond-> (-> d (update :version inc) (update :versions conj v) (assoc :mode (:mode job)))
+                   (= "stt" (:feature job)) (assoc :transcript (:body result) :segments (:segments result) :duration_seconds (:duration result)))]
+        (update docs :records c/replace-item next))
+      (create-document docs ctx (merge (select-keys result [:title :body :evidence :unconfirmed]) {:mode (:mode job) :kind "AI 초안"})))))
 (defn review [docs ctx p]
   (let [d (record! docs (:id p)) _ (c/version! d (:expected_version p)) v (latest d)
         action (:action p)]

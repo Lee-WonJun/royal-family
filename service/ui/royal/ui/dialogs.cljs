@@ -12,7 +12,7 @@
           :targets (set (map :id (get-in data [:organization :members]))) :selected_docs #{"doc01"}}
          (case kind :asset-snapshot (select-keys item [:owner_name :owner_type :area_m2 :land_category])
                :document-create (select-keys item [:title :body]) {})))
-(defui form-dialog [{:keys [kind item data command on-close feedback]}]
+(defui form-dialog [{:keys [kind item data command start-ai on-close feedback]}]
   (let [[form set-form] (uix/use-state #(initial-form kind item data))
         [busy set-busy] (uix/use-state false)
         set-value (fn [k v] (set-form #(assoc % k v)))
@@ -94,13 +94,15 @@
           ($ :div {:class "dialog-actions"}
              (when (= kind :document-create)
                ($ button {:disabled (or busy (str/blank? (:title form)))
-                          :on-click #(run "ai.mock" {:feature "draft" :title (:title form) :instructions (:body form) :evidence [{:document_id "doc03" :version 1}]})} "예시 초안 만들기"))
+                          :on-click #(-> (start-ai {:feature "draft" :title (:title form) :question (:body form)
+                                                    :evidence [{:document_id "doc03" :version (:version (find-id records "doc03"))}]})
+                                         (.then (fn [ok] (when ok (on-close)))))} "AI 초안 만들기"))
              ($ button {:on-click on-close :disabled busy} "취소")
              ($ button {:type "submit" :variant (if (= kind :reset) "danger" "primary") :loading busy}
                 (if busy "저장 중" (case kind :reset "초기화" :consent-create "요청 저장" :consultation "준비 저장" "저장"))))))))
 
 (def features [["stt" "음성 전사"] ["extract" "문서 추출"] ["search" "근거 검색"] ["draft" "문서 작성"]
-               ["legal" "법률·문제 확인"] ["recommend" "전문가 추천"] ["land" "토지 조회"] ["notify" "외부 알림"]
+               ["legal" "법률·문제 확인"] ["recommend" "전문가 추천"] ["decide" "다음 작업 분류"] ["land" "토지 조회"] ["notify" "외부 알림"]
                ["consult" "전문가 접수"] ["signature" "전자서명"] ["finance" "금융 거래"] ["events" "ChatGPT 알림"]])
 (defui settings-panel [{:keys [data busy access unlock lock command on-close open-dialog feedback]}]
   (let [[code set-code] (uix/use-state "") [error set-error] (uix/use-state nil) [unlocking set-unlocking] (uix/use-state false)]
@@ -132,7 +134,8 @@
         (if (seq (:jobs data))
           (for [job (take 5 (reverse (:jobs data)))]
             ($ :div {:key (:id job) :class "setting-row"} ($ :span (get (into {} features) (:feature job)))
-               ($ badge "예시") ($ c/status {:value (:status job)})))
+               ($ :span {:class "muted small"} (or (:model job) "—"))
+               ($ badge (if (= "live" (:mode job)) "실제" "예시")) ($ c/status {:value (:status job)})))
           ($ :p {:class "muted small"} "아직 호출 기록이 없습니다.")))
      ($ :section {:class "settings-section"} ($ :h3 "시연 데이터")
         ($ button {:icon-name :refresh :disabled (or busy unlocking) :on-click #(open-dialog :reset)} "초기 데이터로 되돌리기")))))

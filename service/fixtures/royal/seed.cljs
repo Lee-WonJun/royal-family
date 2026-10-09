@@ -2,7 +2,7 @@
 
 (def feature-labels
   {:stt "음성 전사" :extract "문서 추출" :search "근거 검색" :draft "문서 작성"
-   :legal "법률·문제 확인" :recommend "전문가 추천" :land "토지 조회"
+   :legal "법률·문제 확인" :recommend "전문가 추천" :decide "다음 작업 분류" :land "토지 조회"
    :notify "외부 알림" :consult "전문가 접수" :signature "전자서명" :finance "금융 거래" :events "ChatGPT 알림"})
 (def members
   (mapv (fn [[id name role access joined outreach generation lineage]]

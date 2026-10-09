@@ -1,8 +1,8 @@
 (ns royal.ui.legal (:require [uix.core :as uix :refer [defui $]] [clojure.string :as str]
                              [royal.ui.components :as c :refer [icon button badge tabs field val-of won latest find-id]]
-                             [royal.ui.queries :as queries]))
+                             [royal.ui.queries :as queries] [royal.ui.ai :as ai]))
 
-(defui experts [{:keys [profession request-query open-dialog]}]
+(defui experts [{:keys [profession request-query open-dialog data busy start-ai] :as props}]
   (let [[region set-region] (uix/use-state "") [method set-method] (uix/use-state "")
         [budget set-budget] (uix/use-state "")
         {:keys [loading error run] results :data} (queries/use-query request-query
@@ -30,16 +30,22 @@
                     ($ :div {:class "expert-bottom"} ($ :span (if (:fee expert) (str "시연 비용 " (won (:fee expert))) "비용 확인 필요"))
                        ($ button {:disabled (or loading (some? error)) :on-click #(open-dialog :consultation expert)} "상담 준비")))))
             (when (and (not loading) (not error) (empty? (:candidates results))) ($ c/empty-state {:title "조건에 맞는 후보가 없습니다." :text "지역·방식·예산을 조정해 주세요."}))
-            (when (seq (:needs_confirmation results)) ($ :p {:class "muted small"} (str "비용 미확인: " (str/join ", " (map :name (:needs_confirmation results))) " · 예산 조건에서 제외"))))))))
+            (when (seq (:needs_confirmation results)) ($ :p {:class "muted small"} (str "비용 미확인: " (str/join ", " (map :name (:needs_confirmation results))) " · 예산 조건에서 제외")))
+            ($ :div {:class "dialog-actions"}
+               ($ button {:disabled (or busy loading error (empty? (:candidates results)))
+                          :on-click #(start-ai {:feature "recommend" :title "후보 추천 근거" :question "선택 조건과 자료를 바탕으로 후보별 상담 준비 사항을 설명해 주세요."
+                                                :evidence (ai/document-refs data) :profession profession :region region :method method
+                                                :budget (when-not (str/blank? budget) (js/Number budget))})} "AI 추천 근거"))
+            ($ ai/job-list (assoc props :filter-features #{"recommend"})))))))
 
-(defui preparation-page [{:keys [data busy command open-dialog request-query]}]
+(defui preparation-page [{:keys [data busy command open-dialog request-query] :as props}]
   (let [[task set-task] (uix/use-state "종중 운영 정비") [held set-held] (uix/use-state #{"종원 명부"})
         [note set-note] (uix/use-state "") [tab set-tab] (uix/use-state :prepare)]
     ($ :<>
        ($ :div {:class "page-title"} ($ :h1 "설립 준비") ($ :span {:class "page-marker"} "예시 데이터"))
        ($ tabs {:items [[:prepare "준비 서류"] [:experts "법무사 후보"] [:saved "준비 기록"]] :value tab :on-change set-tab})
        (case tab
-         :experts ($ experts {:profession "judicial_scrivener" :request-query request-query :open-dialog open-dialog})
+         :experts ($ experts (assoc props :profession "judicial_scrivener"))
          :saved ($ :section {:class "section-gap"}
                    (if (seq (get-in data [:legal :preparations]))
                      (for [p (get-in data [:legal :preparations])]
@@ -69,7 +75,7 @@
                ($ :p {:class "muted small"} "신청 목적에 따라 필요한 서류가 달라집니다.")
                ($ button {:icon-name :arrow :on-click #(set-tab :experts)} "법무사 찾기")))))))
 
-(defui legal-page [{:keys [data request-query open-dialog navigate select-doc]}]
+(defui legal-page [{:keys [data busy request-query open-dialog navigate select-doc start-ai] :as props}]
   (let [[tab set-tab] (uix/use-state :issues)
         {:keys [loading error run] results :data} (queries/use-query request-query {:query "check_issues" :revision (:revision data)})
         [question set-question] (uix/use-state "")
@@ -78,7 +84,7 @@
        ($ :div {:class "page-title"} ($ :h1 "법률·문제 확인") ($ :span {:class "page-marker"} "예시 데이터"))
        ($ tabs {:items [[:issues "확인할 문제"] [:basis "법령·판례"] [:experts "변호사 후보"] [:consultations "상담 준비"]] :value tab :on-change set-tab})
        (case tab
-         :experts ($ experts {:profession "lawyer" :request-query request-query :open-dialog open-dialog})
+         :experts ($ experts (assoc props :profession "lawyer"))
          :basis ($ :section {:class "section-gap"}
                    ($ :div {:class "section-label"} ($ :h2 "등록 근거") ($ :span {:class "muted small"} "조회 2026. 10. 09"))
                    (for [source (get-in data [:legal :sources])]
@@ -106,8 +112,13 @@
                     ($ :div ($ :strong (:title issue)) ($ :p {:class "muted"} (:source issue)))
                     ($ :span {:class "task-status"} (if (= "expert_review" (:next_action issue)) "전문가 검토" "자료 보완")) ($ icon {:name :chevron})))
                (when (and results (not loading) (not error) (empty? (:issues results))) ($ c/empty-state {:title "등록 자료에서 확인할 항목이 없습니다."}))
-               ($ :p {:class "muted small source-note"} "등록 자료의 누락·불일치입니다. 위법 여부를 판정한 결과가 아닙니다."))
+               ($ :p {:class "muted small source-note"} "등록 자료의 누락·불일치입니다. 위법 여부를 판정한 결과가 아닙니다.")
+               ($ ai/job-list (assoc props :filter-features #{"legal" "search" "decide"})))
             ($ :aside {:class "side-form"} ($ :h2 "전문가에게 물어볼 내용")
                ($ field {:label "상담 질문"} ($ :textarea {:rows 6 :value question :on-change #(set-question (val-of %)) :placeholder "확인할 자료와 질문"}))
                ($ button {:on-click #(open-dialog :document-create {:title "전문가 검토 질문" :body question}) :disabled (str/blank? question)} "질문 저장")
+               ($ :div {:class "ai-job-actions"}
+                  (for [[feature label] [["legal" "AI 검토"] ["search" "근거 검색"] ["decide" "다음 작업"]]]
+                    ($ button {:key feature :disabled (or busy (str/blank? question))
+                               :on-click #(start-ai {:feature feature :title "종중 자료 검토" :question question :evidence (ai/document-refs data)})} label)))
                ($ button {:variant "primary" :on-click #(set-tab :experts)} "변호사 찾기")))))))
