@@ -10,3 +10,7 @@ node_modules/
 
 # Local secrets and their copies stay out of Git and deployment sources.
 /vaults/
+
+# Local implementation setup and verification output.
+/.codex/sites-bootstrap/
+/qa/artifacts/
