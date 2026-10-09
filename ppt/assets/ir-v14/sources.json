@@ -1,0 +1,55 @@
+{
+  "assets": [
+    {
+      "file": "family-call.m4a",
+      "source": "User-provided C:/Users/dldnj/Downloads/우리땅팔아먹었어.m4a",
+      "sha256": "0ddfff01969625baa69b53dde64eb6e675c9e04cd7b1b10501a14b509a30c1bc"
+    },
+    {
+      "file": "chatgpt-login.png",
+      "source": "User-provided image attachment, 2026-10-09",
+      "sha256": "b6dbc418eec674ad6d38f33c077b375c1380bae75429931d853544d587714b44"
+    },
+    {
+      "file": "codex-app-icon.png",
+      "source": "Installed OpenAI.Codex_26.1002.7124.0 desktop package, assets/Square44x44Logo.targetsize-256_altform-unplated.png",
+      "sha256": "2b001fb1f4e7d76e4d459c2ad8f9739e963ffc1c2137abcfffe8da3ee7775f7c"
+    },
+    {
+      "file": "family-call.wav",
+      "source": "Local 22050 Hz mono PCM16 WAV transcode of the supplied M4A; ffmpeg 9.0.1",
+      "sha256": "17738e9cb6380516eb513f19b008338defc8bd0c72562f314a56bd7aa17e63d2"
+    }
+  ],
+  "audio": {
+    "duration_seconds": 5.88,
+    "codec": "AAC",
+    "original_channels": 2,
+    "original_sample_rate": 48000,
+    "pdf_pcm": {
+      "rate": 22050,
+      "channels": 1,
+      "bits": 16,
+      "byte_order": "big-endian"
+    }
+  },
+  "fonts": {
+    "family": "SUIT",
+    "source": "https://github.com/sun-typeface/SUIT",
+    "license": "SIL Open Font License 1.1",
+    "files": [
+      {
+        "file": "SUIT-Regular.ttf",
+        "sha256": "88c94c990b9996c558666ef07c11664ab177c3be191e2846950b48f245d02274"
+      },
+      {
+        "file": "SUIT-SemiBold.ttf",
+        "sha256": "8d202e0341b9426b653c1b3d36b2c0d1f4b482a7dfa83baaccf84d355d688fbd"
+      },
+      {
+        "file": "SUIT-Bold.ttf",
+        "sha256": "e9b000dcc7a21bc82289fa7d159119ed6dbae621fabdb2553a104394a208e23d"
+      }
+    ]
+  }
+}

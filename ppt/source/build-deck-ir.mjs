@@ -3,6 +3,7 @@ import path from 'node:path';
 import {createRequire} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
 
 const ROOT=process.env.ROYAL_FAMILY_WORKSPACE||path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const BUNDLE=process.env.CODEX_ARTIFACT_RUNTIME||'C:/Users/dldnj/.cache/codex-runtimes/codex-primary-runtime/dependencies';
@@ -12,11 +13,12 @@ const {Presentation,PresentationFile,FileBlob}=await import(pathToFileURL(req.re
 const sharp=req('sharp'),{GlobalFonts,createCanvas}=req('@napi-rs/canvas');
 GlobalFonts.registerFromPath('C:/Windows/Fonts/NotoSerifKR-VF.ttf','Noto Serif KR');
 for(const [f,n] of [['Pretendard-Regular.ttf','Pretendard'],['Pretendard-Bold.ttf','Pretendard'],['Pretendard-SemiBold.ttf','Pretendard SemiBold']])GlobalFonts.registerFromPath(path.join(ROOT,'ppt/assets/fonts',f),n);
+for(const [f,n] of [['SUIT-Regular.ttf','SUIT'],['SUIT-Bold.ttf','SUIT'],['SUIT-SemiBold.ttf','SUIT SemiBold']])GlobalFonts.registerFromPath(path.join(ROOT,'ppt/assets/fonts',f),n);
 const SKILL='C:/Users/dldnj/.codex/plugins/cache/openai-primary-runtime/presentations/26.1007.11041/skills/presentations';
 const {finalizePresentation,applyPresentationChartFont}=await import(pathToFileURL(path.join(SKILL,'container_tools/artifact_tool_utils.mjs')).href);
-const PPT=path.join(ROOT,'ppt'),ASSETS=path.join(PPT,'assets'),BUILD=path.join(ROOT,'.codex/ppt-build-20261009-v13');
-const REV=process.env.PPT_REVISION||'v13_IR',FINAL=process.env.PPT_FINAL_PATH||path.join(PPT,`명문가_발표초안_${REV}.pptx`);
-const PREVIEW=process.env.PPT_PREVIEW_DIR||path.join(PPT,'preview-v13');
+const PPT=path.join(ROOT,'ppt'),ASSETS=path.join(PPT,'assets'),BUILD=path.join(ROOT,'.codex/ppt-build-20261009-v15');
+const REV=process.env.PPT_REVISION||'v15_IR',FINAL=process.env.PPT_FINAL_PATH||path.join(PPT,`명문가_발표초안_${REV}.pptx`);
+const PREVIEW=process.env.PPT_PREVIEW_DIR||path.join(PPT,'preview-v15');
 await fs.mkdir(BUILD,{recursive:true});await fs.mkdir(PREVIEW,{recursive:true});
 const market=JSON.parse(await fs.readFile(path.join(PPT,'data/market-estimate-v6.json'),'utf8'));
 const years=JSON.parse(await fs.readFile(path.join(PPT,'data/precedent-year-search-20261009.json'),'utf8'));
@@ -24,7 +26,7 @@ const evidence=JSON.parse(await fs.readFile(path.join(PPT,'data/implementation-e
 const parcel=JSON.parse(await fs.readFile(path.join(PPT,'data/parcel-source-v7.json'),'utf8'));
 const reviews=JSON.parse(await fs.readFile(path.join(PPT,'data/persona-reviews-v12.json'),'utf8'));
 const C={paper:'#F5F2E9',teal:'#183E35',navy:'#173F49',blue:'#567D89',sage:'#729690',muted:'#687568',rust:'#A85437',pale:'#DCE7E2',grid:'#D2DCD6',white:'#FFFFFF',light:'#BDCFCA'};
-const SANS='Pretendard',HEAD=SANS,NUM=SANS,SERIF='Noto Serif KR';
+const SANS='Pretendard',HEAD=SANS,NUM=SANS,SERIF='Noto Serif KR',REVIEW='SUIT';
 const p=Presentation.create({slideSize:{width:960,height:540}}),copy=[],chartOwners=[],devicePlacements=[];
 const src=s=>path.join(ROOT,s).replaceAll('\\','/');
 const PLAN=src('rawdata/PPTPlan/script.md'),IMPL=src('ppt/data/implementation-evidence-v7.json');
@@ -32,14 +34,14 @@ const PRD=src('docs/prd/hackathon-prd.md'),ARCH=src('docs/architecture/system-de
 const n=number=>number.toLocaleString('en-US');
 const reviewMeasure=createCanvas(1,1).getContext('2d');
 function reviewLines(value,width,size){
- reviewMeasure.font=`${size}px Pretendard`;
+ reviewMeasure.font=`${size}px ${REVIEW}`;
  const lines=[];let line='';
  for(const word of value.split(' ')){
   const candidate=line?line+' '+word:word;
   if(line&&reviewMeasure.measureText(candidate).width>width){lines.push(line);line=word;}else line=candidate;
  }
  if(line)lines.push(line);
- if(lines.length>3)throw Error('Review exceeds three lines');
+ if(lines.length>4)throw Error('Review exceeds four lines: '+value);
  return lines.join('\n');
 }
 function text(s,value,x,y,w,h,size=28,o={}){
@@ -76,6 +78,10 @@ async function icon(s,name,x,y,size,color=C.teal){
  }
  return s.images.add({blob:iconCache.get(key),contentType:'image/png',alt:'Lucide '+name,fit:'contain',position:{left:x,top:y,width:size,height:size}});
 }
+async function benefit(s,ic,value,x,y,w,{size=22,color=C.blue,iconSize=28}={}){
+ await icon(s,ic,x,y+3,iconSize,color);
+ text(s,value,x+iconSize+15,y,w-iconSize-15,45,size,{color,bold:true});
+}
 // Original template device artwork, plus separate replaceable screen images.
 // Source: Premium Cloud Widescreen Multicolored, slides 306 and 312.
 async function laptop(s,screen,x,y,w){
@@ -102,10 +108,12 @@ function chart(s,type,opts){const q=s.charts.add(type,opts);applyPresentationCha
 
 // Keep the user's opening, experience and brand reveal.
 {
- const s=slide({bg:C.paper,notes:'발표자가 아버지와의 통화 녹음을 외부 플레이어로 재생한다. PPT에는 오디오를 삽입하지 않았다.',sources:[PLAN,src('rawdata/TTS/02_전사_보완본.md')],number:false});
- await icon(s,'phone',416,86,128,C.blue);
- text(s,'아버지와의 통화',52,279,856,81,55,{bold:true,align:'center'});
- text(s,'통화 녹음',52,403,856,38,22,{color:C.muted,align:'center'});
+ const s=slide({bg:C.paper,notes:'중앙 전화 버튼으로 사용자 제공 음성을 재생한다. 원본 M4A가 PPT 내부에 포함된다. 제공된 5.88초 음성을 사용한다.',sources:[src('ppt/assets/ir-v14/family-call.m4a')],number:false});
+ shape(s,366,156,228,228,C.pale,'none',0,'ellipse');
+ shape(s,378,168,204,204,C.teal,'none',0,'ellipse');
+ await icon(s,'phone',424,214,112,C.paper);
+ const hit=await sharp({create:{width:1,height:1,channels:4,background:{r:0,g:0,b:0,alpha:0}}}).png().toBuffer();
+ s.images.add({blob:hit,contentType:'image/png',alt:'family-call-audio-button',fit:'fill',position:{left:378,top:168,width:204,height:204}});
 }
 {
  const s=slide({bg:C.teal,notes:'청중에게 자신의 종중을 떠올릴 시간을 준다.',number:false});
@@ -137,10 +145,8 @@ function chart(s,type,opts){const q=s.charts.add(type,opts);applyPresentationCha
 }
 {
  const s=slide({title:'종중 관련 공개 판례',chapter:'공개 판례 검색',sources:[market.precedent_search.source,src('ppt/data/market-estimate-v6.json')],notes:JSON.stringify(market.precedent_search,null,2)});
- text(s,'1,416',57,180,625,172,134,{numeric:true});text(s,'건',646,267,95,72,44);
- await icon(s,'file-search',763,218,123,C.blue);
- text(s,'기간 제한 없는 전체 검색',64,392,744,47,26,{color:C.muted});
- text(s,'2026.10.09 조회',66,454,744,32,19,{color:C.muted});
+ await icon(s,'file-search',168,224,113,C.blue);
+ text(s,'1,416',330,188,390,190,146,{numeric:true});text(s,'건',724,291,67,72,40);
 }
 {
  const s=slide({title:'결국, 누군가 이어받는 일',notes:'과거의 유산, 오늘의 일상, 미래의 문제라는 발표자의 흐름을 설명한다.'});
@@ -167,51 +173,61 @@ function chart(s,type,opts){const q=s.charts.add(type,opts);applyPresentationCha
 {
  const s=slide({bg:C.paper,chapter:'종중 홈',notes:'현재 구현된 앱 홈 화면. 가상 종원과 예시 업무를 사용하는 시연이다. 목업과 화면은 각각 교체 가능한 이미지다.',sources:[IMPL,src('ppt/assets/ir-v11/ui-home.jpg')],foot:'실제 구현 화면 · 예시 데이터'});
  text(s,'오늘\n확인할 일.',48,116,420,187,62,{bold:true});
- text(s,'총무의 첫 화면',53,364,342,42,23,{color:C.blue});
+ await benefit(s,'clipboard-list','일정·미응답을 한눈에',53,342,370,{size:22});
+ await benefit(s,'users-round','명부부터 기록까지 한곳에',53,410,370,{size:22});
  await laptop(s,'ui-home.jpg',330,139,626);
 }
 {
  const s=slide({chapter:'설립 준비',bg:'#E5EDEA',notes:'보유 서류와 부족한 자료를 확인하고, 조건에 맞는 가상 법무사 후보를 비교하는 흐름이다. 외부 전문가 접수는 아직 연결하지 않았다.',sources:[PRD,IMPL,src('ppt/assets/ir-v11/ui-preparation.jpg')],foot:'준비 서류 화면 구현 · 전문가 후보는 가상 데이터'});
- await laptop(s,'ui-preparation.jpg',5,135,631);
+ await laptop(s,'ui-preparation.jpg',5,141,610);
  text(s,'첫 서류부터\n빠짐없이.',579,96,362,159,51,{bold:true});
- text(s,'보유 서류\n추가 확인\n법무사 후보',634,308,285,121,25,{color:C.blue});
+ await benefit(s,'folder-check','빠진 서류까지 확인',630,302,302,{size:21});
+ await benefit(s,'clipboard-list','추가할 항목은 명확하게',630,368,302,{size:21});
+ await benefit(s,'briefcase-business','법무사 후보까지 한 번에',630,434,302,{size:21});
 }
 {
  const s=slide({chapter:'회의 녹음',bg:C.navy,notes:'실제 앱의 휴대폰 회의록 화면이다. 고정된 시연 전사문을 표시하며 Whisper 어댑터는 구현됐으며 이 화면은 해당 연결 이전에 확보한 고정 시연 전사문이다. 녹음, 불명확한 항목 확인, 회의록 작성이라는 목표를 보여준다.',sources:[IMPL,src('ppt/assets/ir-v11/ui-records-phone.jpg')],foot:'시연 전사문 캡처. Whisper 어댑터 구현과 실제 호출 검증은 별도.'});
  text(s,'말한 내용을\n회의록으로.',54,115,568,191,62,{bold:true,color:C.paper});
- await icon(s,'mic',62,369,51,C.light);text(s,'녹음에서 검토까지',135,381,435,39,24,{color:C.light});
+ await benefit(s,'mic','말은 기록으로, 기억은 근거로',62,356,546,{size:24,color:C.light,iconSize:32});
+ await benefit(s,'file-pen-line','녹음부터 회의록 초안까지',62,422,546,{size:24,color:C.light,iconSize:32});
  await phone(s,'ui-records-phone.jpg',650,50,459);
 }
 {
  const s=slide({chapter:'문서 검색과 초안',notes:'기존 문서의 키워드 검색, 초안·개정·버전 이력·검토 기록을 보여준다. 현재 화면의 초안은 시연 데이터다. 별도로 Responses·File Search 서버 어댑터가 구현됐다. 실제 API 검증 결과와 구분한다.',sources:[IMPL,src('ppt/assets/ir-v11/ui-draft.jpg')],foot:'문서·버전·검토 화면. Responses·File Search 서버 어댑터 코드와 실제 호출 검증은 별도.'});
  text(s,'지난 회의도, 이번 초안도.',51,68,875,79,49,{bold:true});
- await laptop(s,'ui-draft.jpg',51,155,594);
- text(s,'원문',765,229,161,48,29,{bold:true});text(s,'버전',765,303,161,48,29,{bold:true});text(s,'초안',765,377,161,48,29,{bold:true,color:C.blue});
+ await laptop(s,'ui-draft.jpg',26,162,582);
+ await benefit(s,'file-search','필요한 원문을 바로 찾고',616,213,322,{size:21});
+ await benefit(s,'files','바뀐 내용은 버전으로 남기고',616,293,322,{size:20});
+ await benefit(s,'file-pen-line','이번 초안은 근거와 함께',616,373,322,{size:21});
 }
 {
  const s=slide({chapter:'총회와 동의',bg:'#E2ECEE',notes:'휴대폰의 실제 동의 현황 화면이다. 응답은 대상자와 특정 문서 버전에 연결한다. 현재는 관리자 시연 입력이며 실제 종원 본인 인증과 외부 발송은 연결 전이다.',sources:[IMPL,src('ppt/assets/ir-v11/ui-consent-phone.jpg')],foot:'대상자·문서 버전별 시연 응답 · 본인 인증·외부 발송은 연결 전'});
  await phone(s,'ui-consent-phone.jpg',54,64,449);
  text(s,'누가,\n어떤 안건에\n동의했는지.',367,105,560,249,57,{bold:true});
- text(s,'응답을 문서 버전과 함께',376,403,540,40,24,{color:C.blue});
+ await benefit(s,'users-round','모든 종중원의 동의가 필요하니까!',376,403,548,{size:24});
+ s.speakerNotes.text+='\n동의 수집의 운영 목표를 표현한 발표자 문구다. 모든 안건에 법적으로 전원 동의가 필요한 것으로 일반화하지 않는다. 실제 의결 요건은 적용 규약과 안건별 기준에 따라 확인한다.';
 }
 {
  const s=slide({chapter:'재산과 등기',bg:'#E2ECEE',sources:[src('ppt/assets/ir-v11/ui-land.jpg'),src('docs/architecture/parcel-map.md'),src('ppt/data/parcel-source-v7.json')],notes:'실제 공개 필지 경계를 지도에 표시한 서비스 화면이다. 등기부 재조회·소유자 변경·알림은 가상 목업이며 실제 등기 발급이나 소유권 확인을 뜻하지 않는다. 지도 출처와 저작권 표시는 캡처 안에 보존했다.'});
  text(s,'우리 종중의 땅',50,70,861,74,52,{bold:true});
- await laptop(s,'ui-land.jpg',37,150,710);
- await icon(s,'map-pin',792,216,54,C.blue);text(s,'필지 확인',759,282,173,43,24,{bold:true});
- await icon(s,'bell-ring',792,356,54,C.blue);text(s,'변경 알림',759,424,173,43,24,{bold:true});
+ await laptop(s,'ui-land.jpg',24,155,646);
+ await benefit(s,'map-pin','우리 땅의 경계를 한눈에',681,233,270,{size:19.5});
+ await benefit(s,'bell-ring','바뀐 등기, 놓치지 않게',681,353,270,{size:19.5});
 }
 {
  const s=slide({chapter:'재산과 회계',bg:C.teal,notes:'토지·계약·회계·변경 기록을 한 업무 영역에서 관리한다. 화면은 실제 앱의 예시 회계이며 실제 금융 거래가 아니다. 토지 후속 자료 비교는 별도 규칙으로 구현됐고 등기 소유권 실조회와 외부 알림은 미연결이다.',sources:[IMPL,src('ppt/assets/ir-v11/ui-accounting.jpg')],foot:'시연 금액 · 재산 비교는 등록 자료 기준 · 실제 금융 거래 없음'});
- text(s,'들어온 돈,\n나간 돈.',52,104,522,175,59,{bold:true,color:C.paper});
- text(s,'재산 자료와 회계 기록',57,363,433,40,24,{color:C.light});
+ text(s,'우리 가문의 재산,\n내가 지킨다',52,112,610,176,50,{bold:true,color:C.paper});
+ await benefit(s,'landmark','재산 현황부터 수입·지출까지',57,350,405,{size:22,color:C.light});
+ await benefit(s,'file-search','증빙과 변경 기록으로 확인',57,421,405,{size:22,color:C.light});
  await laptop(s,'ui-accounting.jpg',347,143,609);
 }
 {
  const s=slide({chapter:'법률 근거와 전문가',notes:'등록된 법령·판례 링크, 규약, 자료 누락 및 조건별 가상 전문가 후보와 상담 준비를 다룬다. 법률 판단을 자동 확정하거나 실제 전문가 매칭이 완료된다는 주장이 아니다.',sources:[IMPL,src('ppt/assets/ir-v11/ui-legal.jpg')],foot:'공식 근거 링크와 상담 준비 화면 · 후보는 가상 데이터'});
- await laptop(s,'ui-legal.jpg',5,135,630);
+ await laptop(s,'ui-legal.jpg',5,141,610);
  text(s,'우리 가문\n법률 전문가',578,105,371,153,47,{bold:true});
- text(s,'법령과 규약\n확인할 쟁점\n전문가 후보',620,306,304,132,25,{color:C.blue});
+ await benefit(s,'book-open','법령·규약에서 근거를 찾고',630,302,308,{size:20.5});
+ await benefit(s,'scale','상담 전, 쟁점부터 정리',630,368,308,{size:20.5});
+ await benefit(s,'briefcase-business','분야에 맞는 전문가를 찾다',630,434,308,{size:20.5});
 }
 
 // 19–21: registered population, nested inclusion diagram and scenario chart.
@@ -242,71 +258,82 @@ function chart(s,type,opts){const q=s.charts.add(type,opts);applyPresentationCha
  const s=slide({title:'Codex 활용',sources:[IMPL,PRD,src('rawdata/Law/catalog.json'),src('ppt/data/parcel-source-v7.json'),src('qa/ui-acceptance-2026-10-09.md')],notes:'통화 음성 전사와 문맥 보완, PRD·종원 페르소나·업무 흐름, 화면·업무 코드·배포, 법령·판례·공개 필지 수집, 단위·PBT·독립 UI 검수를 한 페이지에 모았다. 가상 페르소나는 실제 사용자 조사 표본이 아니며 공식 자료 수집과 서비스 색인은 별도다.'});
  const core=shape(s,406,241,148,148,C.teal,'none',0,'ellipse');
  const work=[
-  {x:438,y:128,d:84,ic:'book-open',label:'PRD · 페르소나',tx:541,ty:150,tw:352},
-  {x:694,y:214,d:96,ic:'laptop',label:'UI · 코드 · 배포',tx:629,ty:324,tw:231},
-  {x:605,y:377,d:96,ic:'square-check-big',label:'테스트 · UI 검수',tx:537,ty:486,tw:234},
-  {x:259,y:377,d:96,ic:'file-search',label:'법령 · 판례 · 필지',tx:180,ty:486,tw:256},
-  {x:170,y:214,d:96,ic:'mic',label:'통화 전사',tx:99,ty:324,tw:238}
+  {x:242,y:142,d:88,ic:'book-open',label:'PRD',tx:196,ty:237,tw:180},
+  {x:630,y:142,d:88,ic:'users-round',label:'페르소나',tx:584,ty:237,tw:180},
+  {x:746,y:280,d:88,ic:'laptop',label:'UI · 코드 · 배포',tx:683,ty:380,tw:215},
+  {x:599,y:404,d:88,ic:'square-check-big',label:'테스트 · UI 검수',tx:525,ty:497,tw:237},
+  {x:273,y:404,d:88,ic:'file-search',label:'법령 · 판례 · 필지',tx:195,ty:497,tw:244},
+  {x:126,y:280,d:88,ic:'mic',label:'통화 전사',tx:79,ty:380,tw:184}
  ];
  const nodes=work.map(a=>shape(s,a.x,a.y,a.d,a.d,C.pale,'none',0,'ellipse'));
  nodes.forEach(node=>s.shapes.connect(core,node,{kind:'straight',line:{fill:C.grid,width:2}}));
- await icon(s,'bot',456,263,48,C.paper);text(s,'Codex',418,330,124,47,31,{color:C.paper,bold:true,align:'center'});
+ await image(s,'ir-v14/codex-app-icon.png',454,261,52,52,'현재 설치된 Codex 데스크톱 앱 아이콘');text(s,'Codex',418,330,124,47,31,{color:C.paper,bold:true,align:'center'});
  for(const [i,a]of work.entries()){
   await icon(s,a.ic,a.x+(a.d-47)/2,a.y+(a.d-47)/2,47,C.teal);
-  text(s,a.label,a.tx,a.ty,a.tw,36,22,{bold:true,align:i===0?'left':'center'});
+  text(s,a.label,a.tx,a.ty,a.tw,32,21,{bold:true,align:'center'});
  }
 }
 {
- const s=slide({title:'CLJS 모듈러 모놀리스',chapter:'서비스 구조',sources:[ARCH,src('service/app/api/store.ts')],notes:'하나의 Sites 배포 안에 웹 화면과 CLJS 업무 모듈을 둔다. 업무 상태와 원본 저장의 세부 구현은 D1·R2다. 모듈은 공개 함수를 통해 연결한다.'});
- shape(s,52,154,852,331,'none',C.grid,2,'roundRect');text(s,'Sites',73,166,785,42,28,{bold:true});
- shape(s,120,261,133,133,C.pale,'none',0,'ellipse');await icon(s,'monitor',154,291,66,C.teal);
- text(s,'웹 화면',100,421,176,42,26,{bold:true,align:'center'});arrow(s,282,320,47,C.blue);
- shape(s,371,239,466,200,C.pale);text(s,'업무 모듈',393,254,424,38,25,{bold:true});
- const modules=['조직','재산','회계','회의','문서','법률'];
- for(const [i,v]of modules.entries())text(s,v,394+(i%3)*144,320+Math.floor(i/3)*64,126,39,25,{align:'center'});
+ const s=slide({title:'서비스 아키텍처',chapter:'CLJS · UIx · 모듈러 모놀리스',sources:[ARCH,src('service/modules/royal/domain.cljs'),src('service/app/api/store.ts'),src('service/app/api/ai/jobs.ts'),src('service/modules/royal/resources.cljs')],notes:'현재 코드의 웹 화면, HTTP 조립 계층, 공개 업무 함수, 의미별 업무 모듈과 저장소·AI 어댑터를 구분한 하이레벨 구조다. 도메인 모듈은 조직·재산·회계·회의·문서·법률·AI 작업에 더해 변경 이벤트와 원격 자원 정리 책임을 나눴다. 하나의 Sites 배포 단위이며 별도 마이크로서비스를 뜻하지 않는다. D1은 상태·버전·outbox, R2는 원본, OpenAI는 전사·생성·검색을 맡는다. Agents 연결은 뒤의 For Agents에서 별도로 다룬다.'});
+ shape(s,52,152,682,333,'none',C.grid,1.5,'roundRect').borderRadius=8;text(s,'Sites',70,165,200,35,26,{bold:true});
+ const web=shape(s,72,216,175,76,C.pale),api=shape(s,72,343,175,76,C.pale),modulesBox=shape(s,283,204,425,254,C.white,C.grid,1);
+ s.shapes.connect(web,api,{kind:'straight',fromSide:'bottom',toSide:'top',line:{fill:C.blue,width:2},tail:{type:'triangle',width:'sm',length:'sm'}});
+ s.shapes.connect(api,modulesBox,{kind:'elbow',fromSide:'right',toSide:'left',line:{fill:C.blue,width:2},tail:{type:'triangle',width:'sm',length:'sm'}});
+ text(s,'웹 앱',88,226,140,32,24,{bold:true,align:'center'});text(s,'CLJS · UIx',88,266,140,25,16,{color:C.blue,align:'center'});
+ text(s,'서버 API',84,353,151,33,24,{bold:true,align:'center'});text(s,'요청 · 권한 · 버전',79,394,161,23,15.5,{color:C.blue,align:'center'});
+ text(s,'도메인 모듈',301,215,385,33,23,{bold:true});
+ const modules=['조직·명부','재산·등기','회계','회의·동의','문서·버전','법률·전문가','AI 작업','변경·알림','자원 정리'];
+ for(const [i,v]of modules.entries()){const x=299+(i%3)*135,y=257+Math.floor(i/3)*61;shape(s,x,y,121,48,C.pale);text(s,v,x+3,y+12,115,31,18.5,{align:'center',bold:true});}
+ for(const [y,title,detail]of [[172,'OpenAI','모델 · 검색'],[284,'D1','상태 · 버전'],[396,'R2','원본 · 음성']]){
+  const box=shape(s,787,y,121,79,title==='OpenAI'?C.navy:C.pale);
+  s.shapes.connect(modulesBox,box,{kind:'elbow',fromSide:'right',toSide:'left',line:{fill:C.blue,width:1.7},tail:{type:'triangle',width:'sm',length:'sm'}});
+  text(s,title,792,y+11,111,34,25,{bold:true,color:title==='OpenAI'?C.paper:C.teal,align:'center'});
+  text(s,detail,792,y+51,111,24,16,{color:title==='OpenAI'?C.light:C.blue,align:'center'});
+ }
 }
 {
- const s=slide({title:'AI 처리 흐름',sources:[src('docs/architecture/ai-runtime.md'),src('service/connectors/openai/workflows.mjs')],notes:'발표에서 System 1은 빠른 판단을 맡는 모델 단계를 뜻한다. 현재 모델 선택은 Luna Decisions가 담당하고, 후보 조건 필터와 모델의 추천 근거 설명을 매칭 흐름에 연결한다. 복잡한 분석은 선택된 고지능 모델로 처리한다. 코드의 생성 모델 허용 목록은 gpt-6-luna와 gpt-6.1-sol이며 음성은 whisper-1이다. 그림은 요청한 역할 구분이며 실제 API 성공을 검증했다는 주장은 아니다.'});
- const a=[['mic','Whisper','전사'],['git-branch','System 1','모델 선택 · 매칭 추천'],['bot','고지능 LLM','분석']];
+ const s=slide({title:'AI 모델과 검색 기술',sources:[src('docs/architecture/ai-runtime.md'),src('service/connectors/openai/workflows.mjs')],notes:'현재 코드의 모델 ID는 whisper-1, gpt-6-luna, gpt-6.1-sol이다. Luna Decisions는 gpt-6-luna를 /decisions에서 호출해 생성 모델과 다음 검토 단계를 각각 선택한다. 전사는 한국어 verbose_json과 segment timestamps를 사용한다. 생성은 Responses와 strict JSON Schema를 사용하지만 발표 화면에는 API 형식 세부 명칭을 나열하지 않았다. File Search는 선택한 문서 버전을 임시 vector store에 넣고 인용 범위를 검사한 뒤 정리한다. 이 장은 사용한 모델·기술의 역할이며 live API 검증 완료를 뜻하지 않는다.'});
+ const a=[['mic','Whisper','whisper-1','음성 전사 · 구간 시각'],['git-branch','GPT-6 Luna','gpt-6-luna','추출 · 요약 · 추천 설명'],['network','GPT-6.1 Sol','gpt-6.1-sol','자료 상충 · 복잡한 문서 분석']];
+ for(const [i,[ic,label,id,detail]]of a.entries()){
+  const x=53+i*300;await icon(s,ic,x,157,53,i===1?C.teal:C.blue);
+  text(s,label,x,231,278,45,29,{bold:true});text(s,id,x,283,278,32,20,{numeric:true,color:C.blue});
+  text(s,detail,x,328,287,31,19,{color:C.muted});
+ }
+ line(s,53,383,854);
+ await icon(s,'git-branch',54,419,43,C.blue);text(s,'Luna Decisions',114,409,372,38,26,{bold:true});text(s,'Luna / Sol 선택 · 다음 작업 판단',114,460,366,30,19,{color:C.blue});
+ await icon(s,'file-search',520,419,43,C.blue);text(s,'File Search',580,409,324,38,26,{bold:true});text(s,'문서·버전별 근거 검색 · 인용',580,460,334,30,19,{color:C.blue});
+}
+{
+ const s=slide({title:'안전한 SW를 만드는 방식',sources:[PRD,ARCH,src('AGENTS.md'),src('docs/architecture/testing.md'),src('qa/scenarios/hackathon-use-cases.md'),src('qa/persona/familly'),src('service/modules/royal/domain.cljs')],notes:'개발자가 적용한 작업 방법을 정리한다. PRD에 요구사항과 완료 조건을 정의하고, 종원·전문가 페르소나로 정상·예외 시나리오를 검토했다. 모듈러 모놀리스에서 DDD의 업무 경계와 공개 함수를 적용하고, 순수 규칙을 cljs.test·test.check의 PBT로 검사한다. 문서 버전 보존, 중복 동의 방지, 회계 합계 일치는 관련 불변식이다. 실패 seed와 최소 반례로 재현한다. 모든 외부 연동 검증이나 안전성의 완전한 보증을 뜻하지 않는다.'});
+ const a=[['book-open','PRD','요구사항과\n완료 조건을 명시'],['users-round','페르소나','역할별 정상·예외\n시나리오를 검토'],['blocks','모듈러 모놀리스','DDD · 업무 경계\n공개 함수로 연결'],['square-check-big','PBT','불변식 검증\n실패 seed·반례 재현']];
  for(const [i,[ic,label,detail]]of a.entries()){
-  const x=105+i*296;shape(s,x,184,152,152,i===1?C.teal:C.pale,'none',0,'ellipse');
-  await icon(s,ic,x+42,222,69,i===1?C.paper:C.teal);
-  text(s,label,x-32,359,216,47,29,{bold:true,align:'center'});
-  text(s,detail,x-58,427,268,37,23,{color:C.blue,align:'center'});
-  if(i<2)arrow(s,x+188,253,50,C.blue);
+  const x=53+i*225;shape(s,x+44,170,106,106,i===2?C.teal:C.pale,'none',0,'ellipse');
+  await icon(s,ic,x+70,196,54,i===2?C.paper:C.teal);
+  text(s,label,x,300,194,45,i===2?24:28,{bold:true,align:'center'});
+  text(s,detail,x-5,363,205,65,20,{color:C.blue,align:'center'});
  }
-}
-{
- const s=slide({title:'하네스',sources:[PRD,src('AGENTS.md'),src('docs/architecture/testing.md'),src('qa/scenarios/hackathon-use-cases.md'),src('qa/ui-acceptance-2026-10-09.md')],notes:'PRD의 요구사항과 완료 조건을 시나리오, 순수 업무 규칙, 속성 기반 테스트와 화면 검수로 연결한다. 개발 에이전트 규칙은 AGENTS.md에 두고 PBT는 cljs.test·test.check를 사용한다. 실제 외부 API와 전체 E2E 완료 여부는 단위 검사와 별도로 다룬다.'});
- const a=[['book-open','PRD','요구사항 · 완료 조건'],['clipboard-list','유스케이스','정상 · 예외'],['square-check-big','PBT','속성 기반 테스트'],['monitor','UI 검수','화면 · 반응형']];
- for(const [i,[ic,label,detail]]of a.entries()){
-  const x=54+i*229;shape(s,x+28,190,138,138,i===2?C.teal:C.pale,'none',0,'ellipse');
-  await icon(s,ic,x+64,226,66,i===2?C.paper:C.teal);
-  text(s,label,x,357,194,45,28,{bold:true,align:'center'});
-  text(s,detail,x-5,426,205,35,20,{color:C.blue,align:'center'});
-  if(i<3)arrow(s,x+187,254,31,C.blue);
- }
+ line(s,54,444,850);for(const [i,label]of ['문서 버전 보존','중복 응답 방지','잔액 합계 일치'].entries())text(s,label,70+i*298,466,255,33,22,{bold:true,align:'center'});
 }
 {
  const average=reviews.reviews.reduce((sum,r)=>sum+Number(r.rating),0)/reviews.reviews.length;
  const s=slide({sources:[src('ppt/data/persona-reviews-v12.json')],notes:'선정 페르소나별 평가다. 실제 고객 만족도 조사나 유료 고객 실적으로 해석하지 않는다. 평균은 제공된 6개 점수의 단순 평균이다.\n'+reviews.reviews.map(r=>`${r.name} · ${r.persona} · ★ ${r.rating}\n“${r.review}”`).join('\n\n')});
- text(s,reviews.title,50,45,650,62,40,{bold:true});
- text(s,'평균',733,65,51,27,17,{color:C.muted});
- text(s,'★ '+average.toFixed(1),790,45,127,51,35,{bold:true,color:C.blue,align:'right'});
+ text(s,'AI도 인정하는 부분',50,44,678,63,40,{bold:true,font:REVIEW});
+ text(s,'★ '+average.toFixed(1),781,39,133,55,38,{bold:true,font:REVIEW,color:C.blue,align:'right'});
+ text(s,'6개 리뷰 평균',714,99,198,23,14,{font:REVIEW,color:C.muted,align:'right'});
  for(const [i,r]of reviews.reviews.entries()){
-  const x=52+(i%2)*438,y=126+Math.floor(i/2)*127;
-  shape(s,x,y,418,117,C.white,C.grid,0.7,'roundRect');
-  text(s,r.name,x+17,y+12,93,30,22,{bold:true});
-  text(s,r.display_role,x+107,y+17,201,25,15,{color:C.muted});
-  text(s,'★ '+r.rating,x+308,y+10,94,34,25,{bold:true,color:C.blue,align:'right'});
-  text(s,reviewLines('“'+r.review+'”',381,18.5),x+17,y+46,384,67,18.5);
+  const x=52+(i%3)*292,y=136+Math.floor(i/3)*184;
+  shape(s,x,y,274,172,C.white,'#D9E1E3',0.7,'roundRect').borderRadius=6;
+  text(s,'★ '+r.rating,x+17,y+12,240,36,26,{bold:true,font:REVIEW,color:C.blue});
+  text(s,reviewLines('“'+r.review+'”',240,17.5),x+17,y+52,240,87,17.5,{font:REVIEW,color:'#354B50'});
+  text(s,r.name,x+17,y+142,85,25,18.5,{font:'SUIT SemiBold',color:C.navy});
+  text(s,r.display_role,x+101,y+146,155,24,12.5,{font:REVIEW,color:C.muted,align:'right'});
  }
 }
 {
  const s=slide({bg:C.navy,number:false,notes:'업무 기록을 바탕으로 확인할 일을 안내하는 Events 흐름을 소개한다.'});text(s,'One More',65,115,836,124,88,{numeric:true,color:C.paper});text(s,'Thing',62,251,839,133,103,{numeric:true,color:C.paper});
 }
 {
- const s=slide({title:'ChatGPT 연동',chapter:'One More Thing',sources:[src('docs/architecture/mcp-and-skills.md'),src('service/connectors/mcp/tools/catalog.ts'),src('service/connectors/mcp/events/catalog.ts')],notes:'Skills는 종중 업무를 다루는 절차, MCP는 공개 업무 기능의 조회와 실행, MCP Events는 자료 변경 후 확인을 안내하는 연결을 담당한다. 모두 이번 구현 범위다. 도구 서버, 이벤트 모듈 코드와 실제 ChatGPT 수신·응답 검증은 구분한다. 서비스 Skill과 Events의 전달 상태는 배포 기록과 별도로 확인해야 한다.'});
+ const s=slide({title:'For Agents',chapter:'One More Thing',sources:[src('docs/architecture/mcp-and-skills.md'),src('service/connectors/mcp/tools/catalog.ts'),src('service/connectors/mcp/events/catalog.ts')],notes:'Skills는 종중 업무를 다루는 절차, MCP는 공개 업무 기능의 조회와 실행, MCP Events는 자료 변경 후 확인을 안내하는 연결을 담당한다. 모두 이번 구현 범위다. 도구 서버, 이벤트 모듈 코드와 실제 ChatGPT 수신·응답 검증은 구분한다. 서비스 Skill과 Events의 전달 상태는 배포 기록과 별도로 확인해야 한다.'});
  const a=[['book-open','Skills','업무 절차'],['network','MCP','조회 · 실행'],['bell-ring','MCP Events','변경 알림']];
  for(const [i,[ic,label,detail]]of a.entries()){
   const x=106+i*296;shape(s,x,182,152,152,i===1?C.teal:C.pale,'none',0,'ellipse');
@@ -316,25 +343,30 @@ function chart(s,type,opts){const q=s.charts.add(type,opts);applyPresentationCha
  }
 }
 {
+ const s=slide({title:'ChatGPT로 명문가에 연결',chapter:'One More Thing',sources:[src('ppt/assets/ir-v14/chatgpt-login.png')],notes:'사용자가 제공한 ChatGPT 로그인 계정 선택 화면이다. 제공된 화면은 변경 없이 사용했다. 계정 선택 화면 자체를 도구 실행·Events 수신이 완료된 증거로 확대 해석하지 않는다.'});
+ await image(s,'ir-v14/chatgpt-login.png',266,145,429,353,'사용자 제공 ChatGPT 명문가 로그인 계정 선택 화면');
+}
+{
  const s=slide({notes:'명문가 브랜드 화면으로 발표를 마친다. 소나무와 사당 배경은 특정 실제 장소가 아닌 개념 일러스트다.',number:false});
  await image(s,'clan-pine.png',0,0,960,540,'명문가 브랜드 개념 일러스트');
  text(s,'우리 가문은',58,119,377,43,27);text(s,'명문가',54,181,442,126,91,{font:SERIF,bold:true});text(s,'종중 운영의 모든것',59,332,424,43,27);
 }
 
-if(p.slides.items.length!==30)throw Error('Unexpected slide count');
+if(p.slides.items.length!==31)throw Error('Unexpected slide count');
 for(const k of ['TAM','SAM','SOM']){const value=market[k].annual_subscription_revenue_won??market[k].annual_run_rate_won;if(market[k].clans*market.subscription_assumption.annual_fee_per_clan!==value)throw Error('Market arithmetic: '+k);}
-await fs.writeFile(path.join(BUILD,'copy-v13.json'),JSON.stringify(copy,null,2));
+await fs.writeFile(path.join(BUILD,'copy-v15.json'),JSON.stringify(copy,null,2));
 await fs.writeFile(path.join(BUILD,'device-placements.json'),JSON.stringify(devicePlacements,null,2));
-await fs.writeFile(path.join(BUILD,'authored-v13-proto.json'),JSON.stringify(p.toProto()));
+await fs.writeFile(path.join(BUILD,'authored-v15-proto.json'),JSON.stringify(p.toProto()));
 const candidate=path.join(BUILD,`candidate-${REV}.pptx`);
 await(await PresentationFile.exportPptx(p)).save(candidate);console.log('DRAFT_EXPORTED '+candidate);
-const result=await finalizePresentation({workspaceDir:ROOT,candidatePath:candidate,finalPath:FINAL,pythonExecutable:path.join(BUNDLE,'python/python.exe'),integrityValidatorPath:path.join(SKILL,'container_tools/inspect_presentation_package_integrity.py'),layoutValidatorPath:path.join(SKILL,'container_tools/inspect_presentation_layout_geometry.py'),layoutArgs:['--expected-slide-size-emu','9144000,5143500','--validate-heading-fit','--validate-bullet-geometry'],requiredNativeChartOwnerSlides:chartOwners,materializeLiteralChartWorkbooks:true,fontPolicy:{basis:'design',families:[SANS,SERIF]},verifyArtifactToolImport:true,receiptPath:path.join(BUILD,`validation-${REV}.json`)});
+execFileSync(path.join(BUNDLE,'python/python.exe'),[path.join(PPT,'source/embed-media.py'),'pptx',candidate,path.join(ASSETS,'ir-v14/family-call.m4a')],{stdio:'inherit'});
+const result=await finalizePresentation({workspaceDir:ROOT,candidatePath:candidate,finalPath:FINAL,pythonExecutable:path.join(BUNDLE,'python/python.exe'),integrityValidatorPath:path.join(SKILL,'container_tools/inspect_presentation_package_integrity.py'),layoutValidatorPath:path.join(SKILL,'container_tools/inspect_presentation_layout_geometry.py'),layoutArgs:['--expected-slide-size-emu','9144000,5143500','--validate-heading-fit','--validate-bullet-geometry'],requiredNativeChartOwnerSlides:chartOwners,materializeLiteralChartWorkbooks:true,fontPolicy:{basis:'design',families:[SANS,SERIF,REVIEW,'SUIT SemiBold']},verifyArtifactToolImport:true,receiptPath:path.join(BUILD,`validation-${REV}.json`)});
 console.log('FINALIZED '+JSON.stringify({path:result.finalPath,slides:result.packageIntegrity.slide_count,layoutFindings:result.presentationLayout.findingCount,sha256:result.finalSha256}));
 const deck=await PresentationFile.importPptx(await FileBlob.load(FINAL));
 for(const [i,s]of deck.slides.items.entries()){
  await fs.writeFile(path.join(PREVIEW,`slide-${String(i+1).padStart(2,'0')}.png`),new Uint8Array(await(await deck.export({slide:s,format:'png',scale:1.333333})).arrayBuffer()));
  console.log('RENDERED '+(i+1));
 }
-await fs.writeFile(path.join(BUILD,'revision-v13-receipt.json'),JSON.stringify({final:FINAL,sha256:result.finalSha256,slides:30,nativeCharts:chartOwners,reviewSlide:27,deviceMockupSlides:devicePlacements.map(d=>d.slide),devicePlacements,sourceDeck:src('ppt/명문가_발표초안_v11_IR.pptx'),sourceDeckSha256:createHash('sha256').update(await fs.readFile(path.join(PPT,'명문가_발표초안_v11_IR.pptx'))).digest('hex'),template:'C:/Users/dldnj/OneDrive/문서/Premium Cloud Widescreen Multicolored.pptx',templateDeviceSlides:[306,312],evidenceAsOf:evidence.as_of},null,2));
+await fs.writeFile(path.join(BUILD,'revision-v15-receipt.json'),JSON.stringify({final:FINAL,sha256:result.finalSha256,slides:31,nativeCharts:chartOwners,reviewSlide:27,loginSlide:30,deviceMockupSlides:devicePlacements.map(d=>d.slide),devicePlacements,sourceDeck:src('ppt/명문가_발표초안_v13_IR.pptx'),sourceDeckSha256:createHash('sha256').update(await fs.readFile(path.join(PPT,'명문가_발표초안_v13_IR.pptx'))).digest('hex'),template:'C:/Users/dldnj/OneDrive/문서/Premium Cloud Widescreen Multicolored.pptx',templateDeviceSlides:[306,312],evidenceAsOf:evidence.as_of},null,2));
 console.log('DONE '+FINAL);
 process.exit(0);
