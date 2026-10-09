@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { PDFDocument, PDFName, PDFDict, PDFArray, PDFRawStream, decodePDFRawStream } from 'pdf-lib';
-import { makeDocumentPdf } from '../connectors/export/pdf.mjs';
+import { makeDocumentPdf, makePhoneBriefPdf } from '../connectors/export/pdf.mjs';
 
 // Decode the exported PDF's own content and ToUnicode maps. This checks copy /
 // search text independently of the font layout that rendered the visible page.
@@ -52,4 +52,20 @@ test('Korean PDF preserves selected version, pages and exact attachment scope', 
   const output = new URL('../../qa/artifacts/pdf/', import.meta.url);
   await mkdir(output, { recursive: true });
   await writeFile(new URL('selected-version.pdf', output), rendered.bytes);
+});
+
+test('telephone brief fits one readable page and retains the exact consent version', async () => {
+  const font = await readFile(new URL('../connectors/export/fonts/Pretendard-Regular.ttf', import.meta.url));
+  const rendered = await makePhoneBriefPdf({ member: { name: '이순자', preferred_contact: '전화' },
+    request: { id: 'request01', title: '총회 소집 안내 확인', document_id: 'doc02', document_version: 3, deadline: '2026-11-01T09:00:00Z' },
+    document_title: '10월 정기총회 소집 안내', summary: '안건: 묘역 정비 견적 확인, 토지 자료 정리\n일시: 2026년 10월 24일 14시\n장소: 종중 회관 (시연 설정)',
+    response: { response: 'disagree' } }, font);
+  const pdf = await PDFDocument.load(rendered.bytes), text = exportedText(pdf);
+  assert.equal(pdf.getPageCount(), 1);
+  assert.ok(text.includes('이순자'));
+  assert.ok(text.includes('doc02 v3'));
+  assert.ok(text.includes('기록된 응답: 거절'));
+  assert.ok(text.includes('2026'));
+  await mkdir(new URL('../../qa/artifacts/pdf/', import.meta.url), { recursive: true });
+  await writeFile(new URL('../../qa/artifacts/pdf/telephone-brief.pdf', import.meta.url), rendered.bytes);
 });

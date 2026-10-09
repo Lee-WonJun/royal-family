@@ -1,4 +1,4 @@
-(ns royal.organization (:require [royal.common :as c]))
+(ns royal.organization (:require [royal.common :as c] [royal.roster :as roster]))
 
 (defn members [org] (:members org))
 (defn member! [org id] (c/find! (members org) id))
@@ -24,9 +24,23 @@
 (defn update-member [org ctx p]
   (let [m (member! org (:id p))]
     (c/version! m (:expected_version p))
+    (when (contains? p :preferred_contact)
+      (c/ensure! (roster/contact-methods (:preferred_contact p)) :invalid_input "연락 방법을 확인해 주세요."))
+    (when (:contact_note p) (c/ensure! (<= (count (:contact_note p)) 500) :invalid_input "연락 메모는 500자 이하여야 합니다."))
     (c/ensure! (contains? #{"회장" "총무" "전임 총무" "검토자" "종원"} (or (:role p) (:role m))) :invalid_input "직책을 확인해 주세요.")
     (update org :members c/replace-item
-            (-> m (merge (select-keys p [:role :contact_state :outreach])) (update :version inc)))))
+            (-> m (merge (select-keys p [:role :contact_state :outreach :preferred_contact :contact_note])) (update :version inc)))))
+
+(defn preview-import [org p]
+  (roster/preview (members org) (roster/matrix->rows (:matrix p))))
+(defn import-members [org ctx p]
+  (let [preview (roster/preview (members org) (:rows p))]
+    (c/ensure! (every? :valid preview) :invalid_input "오류가 있는 행은 등록할 수 없습니다. 미리보기를 다시 확인해 주세요.")
+    (reduce (fn [o [i row]]
+              (let [id (str (:id ctx) "-" (inc i))]
+                (-> (add-member o (assoc ctx :id id) (:member row))
+                    (update :members (fn [all] (mapv #(if (= id (:id %)) (merge % (:member row)) %) all))))))
+            org (map-indexed vector preview))))
 (defn add-relation [org ctx p]
   (let [parent (:parent_id p) child (:child_id p)]
     (doseq [id [parent child]] (c/scoped! ctx (:clan_id (member! org id))))

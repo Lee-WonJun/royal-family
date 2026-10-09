@@ -28,6 +28,7 @@
              (for [m meetings] ($ :option {:key (:id m) :value (:id m)} (:title m))))
           ($ button {:on-click #(open-dialog :meeting-revise current)} "총회 정보 변경"))
        ($ :div {:class "meeting-summary"} ($ :h2 (:title meeting)) ($ :p (:agenda meeting))
+          ($ button {:on-click #(open-dialog :meeting-packet {:meeting_id (:id meeting) :meeting_version (:version meeting)})} "안건별 근거·정정·이의")
           ($ :p {:class "muted"} (str (display-date (:date meeting)) " · " (:place meeting)))
           ($ :div {:class "section-label"}
              (for [[id v label] [[(:document_id meeting) (:document_version meeting) "안건 자료"]

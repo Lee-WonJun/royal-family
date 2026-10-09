@@ -16,3 +16,7 @@ node_modules/
 /.codex/site-publish/
 /.codex/royal-family-site.tar.gz
 /qa/artifacts/
+/.codex/check-cljs-delimiters.py
+/.codex/roster-artifacts/
+/outputs/01a11e9a-f8e7-75d1-9d77-3ca3786a811b/
+/qa/fixtures/roster/*.inspect.ndjson

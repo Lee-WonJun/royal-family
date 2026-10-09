@@ -4,6 +4,7 @@
             [royal.accounting :as accounting] [royal.legal-support :as legal] [royal.ai-workflows :as ai]
             [royal.events :as events]
             [royal.resources :as resources]
+            [royal.persona-support :as support]
             [clojure.string :as str]))
 
 (defn initial-state-js [generation] (clj->js (seed/initial-state (or generation 1))))
@@ -31,6 +32,12 @@
   (check-context! state ctx p)
   (case (:query p)
     "snapshot" (public-state state)
+    "get_persona_inbox" (support/inbox state ctx (:member_id p))
+    "get_phone_brief" (support/phone-brief state ctx p)
+    "get_meeting_packet" (support/packet state p)
+    "get_document_history" (support/document-history state (:document_id p) (:version p))
+    "get_today_work" (support/today state ctx)
+    "preview_roster_import" (org/preview-import (:organization state) p)
     "get_clan_overview" {:members (count (org/members (:organization state))) :meetings (meetings/items (:meetings state))
                          :requests (meetings/requests (:meetings state)) :issues (check-issues state)}
     "get_member_hierarchy" (org/hierarchy (:organization state) (:member_id p))
@@ -52,6 +59,10 @@
     (case op
       "member.add" (update state :organization org/add-member ctx p)
       "member.update" (update state :organization org/update-member ctx p)
+      "member.import" (update state :organization org/import-members ctx p)
+      "phone.readback" (support/readback state ctx p)
+      "objection.create" (support/objection state ctx p)
+      "objection.reply" (support/reply-objection state ctx p)
       "organization.handover" (update state :organization org/handover ctx p)
       "relation.add" (update state :organization org/add-relation ctx p)
       "relation.remove" (update state :organization org/remove-relation ctx p)
@@ -96,6 +107,11 @@
       "delivery.interrupted" (events/interrupt-delivery state ctx p)
       "delivery.stop" (events/stop-delivery state ctx p)
       "preparation.save" (update state :legal legal/preparation ctx p)
+      "preparation.item" (do (when (:document_id p) (docs/version! (:documents state) (:document_id p) (:document_version p)))
+                             (update state :legal legal/preparation-item ctx p))
+      "supplement.request" (update state :legal legal/supplement-request ctx p)
+      "supplement.reply" (do (when (:document_id p) (docs/version! (:documents state) (:document_id p) (:document_version p)))
+                             (update state :legal legal/supplement-reply ctx p))
       "consultation.prepare" (do (evidence! state (:documents p)) (update state :legal legal/consultation ctx p))
       "settings.set" (let [feature (keyword (:feature p)) mode (:mode p)]
                          (c/ensure! (contains? seed/feature-labels feature) :invalid_input "기능을 찾을 수 없습니다.")

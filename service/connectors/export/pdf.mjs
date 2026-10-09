@@ -4,6 +4,38 @@ import fontkit from '@pdf-lib/fontkit';
 const statuses = { draft: '초안', in_review: '검토 중', internally_confirmed: '내부 확인 완료', reference: '공식 자료 사본' };
 const tidy = value => String(value ?? '').replace(/\r\n?/g, '\n').replace(/\t/g, '    ').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
 
+export async function makePhoneBriefPdf(brief, fontBytes) {
+  const pdf = await PDFDocument.create(); pdf.registerFontkit(fontkit);
+  const font = await pdf.embedFont(fontBytes, { subset: false, features: { calt: false, locl: false, liga: false, clig: false } });
+  const page = pdf.addPage(PageSizes.A4), margin = 42, width = PageSizes.A4[0] - margin * 2;
+  let y = 793;
+  function block(value, size = 17, maxLines = 3) {
+    const lines = []; let line = '';
+    for (const character of tidy(value)) {
+      if (character === '\n' || font.widthOfTextAtSize(line + character, size) > width) { lines.push(line); line = ''; }
+      if (character !== '\n') line += character;
+    }
+    if (line) lines.push(line);
+    const visible = lines.slice(0, maxLines);
+    if (lines.length > maxLines) visible[maxLines - 1] = visible[maxLines - 1].slice(0, -12) + '… 원문 확인';
+    for (const text of visible) { page.drawText(text, { x: margin, y, font, size, color: rgb(.10, .16, .14) }); y -= size * 1.45; }
+    y -= 12;
+  }
+  const r = brief.request;
+  pdf.setTitle('명문가 전화 설명서'); pdf.setAuthor('명문가 시연 관리자'); pdf.setLanguage('ko-KR');
+  block('명문가 전화 설명서', 24, 1);
+  block(`대상: ${brief.member.name} / 연락: ${brief.member.preferred_contact || '미확인'}`, 17, 2);
+  block(r.title, 20, 2);
+  block(brief.summary, 17, 8);
+  block(`결정 대상: ${brief.document_title} v${r.document_version}`, 17, 2);
+  block(`응답 기한: ${new Date(r.deadline).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })} (한국 시각)`, 17, 2);
+  block(`기록된 응답: ${{ agree: '동의', disagree: '거절', withdrawn: '철회' }[brief.response?.response] || '미응답'}`, 18, 1);
+  block('읽어드린 응답이 맞습니까?\n고칠 내용이 있으면 말씀해 주세요.', 17, 2);
+  page.drawText(`원문: ${r.document_id} v${r.document_version} / 명문가 기록·문서에서 확인`, { x: margin, y: 54, font, size: 11 });
+  page.drawText('시연 기록 · 실제 본인 인증이나 법적 동의 증명이 아닙니다.', { x: margin, y: 34, font, size: 11 });
+  return { bytes: await pdf.save(), pages: 1 };
+}
+
 // Inputs are the exact versions already authorized by documents.export-records.
 export async function makeDocumentPdf(records, fontBytes, attachments = []) {
   if (!records.length || records.length > 10) throw new Error('Invalid export scope');

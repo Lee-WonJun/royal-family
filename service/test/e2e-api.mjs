@@ -3,6 +3,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { PDFDocument } from 'pdf-lib';
+import { readSheet } from 'read-excel-file/node';
 
 if (process.env.RF_E2E_READY !== '1') throw new Error('Run only after mandatory implementation, unit tests and build are complete. Set RF_E2E_READY=1.');
 const base = process.env.RF_E2E_BASE || 'http://127.0.0.1:5180';
@@ -163,11 +164,66 @@ try {
       delivery: { mode: 'webhook', url: 'https://receiver.example/hook', secret: 'whsec_' + Buffer.alloc(32, 7).toString('base64') }, cursor: null });
     assert.ok(subscription.data.error); assert.equal(state.subscriptions.length, 0);
   });
+  await step('XLSX preview, selected import and duplicate refusal', async () => {
+    const matrix = await readSheet(new URL('../../qa/fixtures/roster/import-review.xlsx', import.meta.url), 1);
+    const preview = (await request('/api/query', { query: 'preview_roster_import', matrix })).data.value;
+    assert.equal(preview.filter(row => row.valid).length, 1); assert.equal(preview.filter(row => !row.valid).length, 2);
+    const rows = preview.filter(row => row.valid).map(row => ({ ...row.member, row: row.row }));
+    const imported = await command('member.import', { rows });
+    assert.equal(state.organization.members.length, 11);
+    assert.equal(state.organization.members.at(-1).phone, '01000009999');
+    assert.equal(state.organization.members.at(-1).access, '열람');
+    await request('/api/command', imported.packet); assert.equal(state.organization.members.length, 11);
+    await command('member.import', { rows }, 'invalid_input');
+  });
+  await step('quick response, immutable telephone readback and single-page PDF', async () => {
+    const inbox = (await request('/api/query', { query: 'get_persona_inbox', member_id: 'm09' })).data.value;
+    assert.equal(inbox[0].request.id, 'request01'); assert.equal(inbox[0].can_respond, true);
+    const member = state.organization.members.find(m => m.id === 'm09');
+    await command('member.update', { id: 'm09', expected_version: member.version, preferred_contact: '전화', contact_note: '시연 통화 안내' });
+    const response = await command('consent.respond', { request_id: 'request01', document_version: 1, member_id: 'm09', response: 'agree', note: '시연 응답' });
+    const original = JSON.stringify(state.meetings.responses);
+    for (const status of ['confirmed', 'correction_requested']) await command('phone.readback', {
+      request_id: 'request01', document_version: 1, member_id: 'm09', response_id: response.object_id, status, note: '시연 정정 요청' });
+    assert.equal(JSON.stringify(state.meetings.responses), original);
+    assert.equal(state.readbacks.length, 2);
+    const brief = (await request('/api/query', { query: 'get_phone_brief', request_id: 'request01', document_version: 1, member_id: 'm09' })).data.value;
+    assert.equal(brief.readbacks.length, 2); assert.equal(brief.response.response, 'agree');
+    const pdf = await request(`/api/phone-brief?request_id=request01&member_id=m09&document_version=1&generation=${state.generation}`, undefined, { binary: true, status: 200 });
+    assert.equal((await PDFDocument.load(pdf.data)).getPageCount(), 1);
+    await writeFile(new URL('telephone-brief.pdf', artifacts), pdf.data);
+    await command('phone.readback', { request_id: 'request01', document_version: 1, member_id: 'm09', response_id: 'stale', status: 'confirmed', note: '' }, 'version_conflict');
+  });
+  await step('meeting packet pins versions and keeps objections and replies', async () => {
+    const p = { meeting_id: 'meeting01', meeting_version: 1 };
+    const packet = (await request('/api/query', { query: 'get_meeting_packet', ...p })).data.value;
+    assert.ok(packet.documents.some(d => d.id === 'doc03' && d.version === 1));
+    assert.ok(packet.documents.some(d => d.id === 'doc01' && d.version === 1));
+    const objection = await command('objection.create', { ...p, member_id: 'm01', document_id: 'doc03', document_version: 1, body: '가상 규약 근거 확인 요청' });
+    await command('objection.reply', { id: objection.object_id, body: '시연 자료 확인 예정', status: 'open' });
+    assert.equal(state.objections.at(-1).body, '가상 규약 근거 확인 요청'); assert.equal(state.objections.at(-1).replies.length, 1);
+    const difference = (await request('/api/query', { query: 'get_document_history', document_id: documentId, version: 3 })).data.value;
+    assert.ok(difference.change.after.includes('원본 견적서')); assert.equal(difference.record.revision_reason, '검토 질문 정리');
+  });
+  await step('purpose checklist supplement lifecycle and actionable today work', async () => {
+    const prep = await command('preparation.save', { task: '토지 등기 준비', held: ['토지 자료'], note: '시연 준비' });
+    const version = () => state.legal.preparations.find(p => p.id === prep.object_id).version;
+    const base = () => ({ id: prep.object_id, expected_version: version() });
+    const supplement = await command('supplement.request', { ...base(), item_id: 'item-1', body: '사본 여부와 자료 확인' });
+    await command('supplement.reply', { ...base(), request_id: supplement.object_id, body: '자료를 연결했습니다.', status: 'replied', document_id: documentId, document_version: 3 });
+    await command('preparation.item', { ...base(), item_id: 'item-1', copy_kind: 'copy', issued_date: '2026-10-08', check_status: 'checked', document_id: documentId, document_version: 3, note: '시연 대조' });
+    await command('supplement.reply', { ...base(), request_id: supplement.object_id, body: '자료 확인 완료', status: 'resolved', document_id: documentId, document_version: 3 });
+    const work = (await request('/api/query', { query: 'get_today_work' })).data.value;
+    assert.equal(work.preparations.find(p => p.id === prep.object_id).remaining.length, 3);
+    assert.equal(work.phone_corrections.length, 1);
+    assert.ok(work.pending.every(p => p.member_id !== 'm09'));
+  });
   await step('reset, delayed result rejection, old file denial and cleanup completion', async () => {
     oldGeneration = state.generation;
     const reset = await command('reset', {});
     assert.equal(state.generation, oldGeneration + 1); assert.equal(state.documents.records.length, 7);
     assert.equal(state.jobs.length, 0); assert.equal(state.subscriptions.length, 0); assert.ok(Object.values(state.settings.features).every(mode => mode === 'mock'));
+    assert.equal(state.readbacks?.length || 0, 0); assert.equal(state.objections?.length || 0, 0); assert.equal(state.legal.preparations.length, 0);
     assert.equal((await request('/api/command', reset.packet)).data.state.generation, state.generation);
     assert.equal((await request('/api/ai', { action: 'run', id: queuedId, generation: oldGeneration }, { status: 409 })).data.error.code, 'stale_generation');
     await request(`/api/files?document_id=${audioId}`, undefined, { status: 404 }); await request(exportUrl, undefined, { status: 404 });

@@ -5,6 +5,8 @@
             [royal.ui.legal :as legal] [royal.ui.dialogs :as dialogs] [royal.ui.accounts :as accounts]
             [royal.ui.ai :as ai]
             [royal.ui.exports :as exports]
+            [royal.ui.assistance :as assistance] [royal.ui.evidence :as evidence]
+            [royal.ui.checklists :as checklists] [royal.ui.roster-import :as roster-import]
             [royal.ui.transport :as transport :refer [request-json post-json]]))
 
 (defui sidebar [{:keys [page navigate open-settings open-search open-notifications open-profile persona unread-count]}]
@@ -30,6 +32,7 @@
         [modal set-modal] (uix/use-state nil) [toast set-toast] (uix/use-state nil) [operation set-operation] (uix/use-state nil)
         [selected-doc set-selected-doc] (uix/use-state "doc01") [drafts set-drafts] (uix/use-state {})
         [ai-drafts set-ai-drafts] (uix/use-state {})
+        [workflow-drafts set-workflow-drafts] (uix/use-state {})
         [doc-request set-doc-request] (uix/use-state nil)
         [search set-search] (uix/use-state "") [personas set-personas] (uix/use-state [])
         [persona set-persona] (uix/use-state nil) [initialized set-initialized] (uix/use-state false)
@@ -75,7 +78,7 @@
                                    (when (= token @epoch)
                                      (apply-state (:state r) token) (swap! retries dissoc key) (notify {:text message})
                                      (when (= op "reset")
-                                       (swap! epoch inc) (reset! retries {}) (set-drafts {}) (set-ai-drafts {}) (set-page :home)
+                                       (swap! epoch inc) (reset! retries {}) (set-drafts {}) (set-ai-drafts {}) (set-workflow-drafts {}) (set-page :home)
                                        (set-selected-doc "doc01") (set-settings false)
                                        (set-access #(assoc % :unlocked false :expires_at nil)))) true))
                           (.catch (fn [e]
@@ -119,14 +122,14 @@
                    (do (swap! epoch inc) (set-error nil)
                        (-> (post-json "/api/session" {:persona_id (:id p)})
                            (.then (fn [_] (set-persona p) (set-access #(assoc % :unlocked false))
-                                    (navigate (keyword (:page p))) (set-drafts {}) (set-ai-drafts {}) (reset! retries {}) (load)))
+                                    (navigate (keyword (:page p))) (set-drafts {}) (set-ai-drafts {}) (set-workflow-drafts {}) (reset! retries {}) (load)))
                            (.catch #(set-error (.-message %))) (.finally #(finish id)))) (js/Promise.resolve false)))
         change-account (fn []
                          (if-let [id (begin {:kind :session :label "계정 변경 중"})]
                            (do (swap! epoch inc)
                                (-> (request-json "/api/session" {:method "DELETE"})
                                    (.then (fn [_] (set-persona nil) (set-access #(assoc % :unlocked false)) (set-settings false)
-                                            (set-modal nil) (set-menu false) (set-toast nil) (set-drafts {}) (set-ai-drafts {}) (reset! retries {})))
+                                            (set-modal nil) (set-menu false) (set-toast nil) (set-drafts {}) (set-ai-drafts {}) (set-workflow-drafts {}) (reset! retries {})))
                                    (.catch #(notify {:text (.-message %) :error true})) (.finally #(finish id)))) (js/Promise.resolve false)))
         unlock (fn [code] (let [token @epoch]
                             (-> (post-json "/api/ai-access" {:code code})
@@ -171,6 +174,7 @@
         background-activity (when-let [job (first active-jobs)]
                               {:id (:id job) :kind :ai :label (str "AI " (get ai/phases (:phase job) "처리 중") (when (> (count active-jobs) 1) (str " · " (count active-jobs) "건")))})
         props {:data data :busy busy :command command :navigate navigate :open-dialog open-dialog :select-doc select-document :request-query request-query :refresh load
+               :persona persona :feedback toast :workflow-drafts workflow-drafts :set-workflow-drafts set-workflow-drafts
                :start-ai start-ai :resume-ai resume-ai :ai-drafts ai-drafts :set-ai-drafts set-ai-drafts}
         side-props {:page page :persona persona :navigate navigate
                     :unread-count (count (filter #(= "unread" (:state %)) (concat (get-in data [:assets :notifications]) (get-in data [:meetings :notifications]))))
@@ -225,6 +229,12 @@
        (when (and settings-open data) ($ dialogs/settings-panel {:data data :busy busy :access access :unlock unlock :lock lock :command command :feedback toast :on-close #(set-settings false) :open-dialog open-dialog}))
        (when (and modal data)
          (case (:kind modal)
+           :roster-import ($ roster-import/import-dialog (merge props {:key (:generation data) :on-close #(set-modal nil) :feedback toast}))
+           :phone-brief ($ assistance/phone-dialog (merge props {:key (:generation data) :item (:item modal) :on-close #(set-modal nil) :feedback toast}))
+           :first-meeting ($ assistance/first-meeting-dialog (merge props {:on-close #(set-modal nil)}))
+           :meeting-packet ($ evidence/packet-dialog (merge props {:key (:generation data) :item (:item modal) :on-close #(set-modal nil) :feedback toast}))
+           :document-change ($ evidence/change-dialog (merge props {:key (:generation data) :item (:item modal) :on-close #(set-modal nil)}))
+           :preparation-checklist ($ checklists/checklist-dialog (merge props {:key (:generation data) :item (:item modal) :on-close #(set-modal nil) :feedback toast}))
            :search ($ c/dialog {:title "검색" :on-close #(set-modal nil)}
                       ($ :div {:class "search-input"} ($ icon {:name :search}) ($ :input {:auto-focus true :aria-label "전체 기록 검색" :placeholder "문서·회의 검색" :value search :on-change #(set-search (val-of %))}))
                       ($ :div {:class "search-results"}

@@ -1,5 +1,7 @@
 # 명문가 QA 유즈케이스
 
+추가 RF-23–RF-28은 [페르소나 개선 검수 SC-35–40](persona-improvements.md)에서 추적한다.
+
 작성일: 2026-10-09 · 상태: 시나리오 정의, 전체 E2E 미실행
 
 기준은 [해커톤 PRD](../../docs/prd/hackathon-prd.md)다. UC-01–UC-08은 사용자 목표, SC-01–SC-28은 검증할 행동이다. 모든 SC의 전체 E2E 실행 상태는 **미실행**이다. 일부 단위·PBT와 [독립 UI 검수](../ui-acceptance-2026-10-09.md)는 별도로 실행했다. E2E는 [최종 게이트](../../docs/architecture/testing.md#e2e-gate) 이후에만 실행한다. 아래 기대 결과는 합격 기준이며 현재 동작을 설명한 것이 아니다.

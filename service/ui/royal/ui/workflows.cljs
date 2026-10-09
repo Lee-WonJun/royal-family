@@ -4,41 +4,21 @@
             [royal.ui.registry :as registry] [royal.assets :as asset-rules]
             [royal.ui.meeting-panel :refer [meeting-panel]] [royal.accounting :as accounting]
             [royal.ui.events :as events]
+            [royal.ui.assistance :as assistance]
             [royal.ui.components :as c :refer [icon button badge status tabs field val-of won find-id latest]]))
 
-(defui home-page [{:keys [data navigate select-doc]}]
-  (let [[tab set-tab] (uix/use-state :today)
-        records (get-in data [:documents :records])
-        review (first (filter #(seq (:unconfirmed (latest %))) records))
-        draft (first (filter #(= "draft" (:status (latest %))) records))
-        pending (count (filter #(str/includes? (:outreach %) "대기") (get-in data [:organization :members])))]
-    ($ :<>
-       ($ :div {:class "page-title"} ($ :h1 "종중 홈") ($ :span {:class "page-marker"} "예시 데이터"))
-       ($ tabs {:items [[:today "오늘"] [:all "전체 업무"]] :value tab :on-change set-tab})
-       (when (= tab :today)
-         ($ :section {:class "home-tasks"}
-            ($ :h2 "확인할 일")
-            (if (or review draft (pos? pending))
-              ($ :div {:class "task-list"}
-                 (when review ($ :button {:class "task-row" :on-click #(do (select-doc (:id review)) (navigate :records))}
-                                  ($ :div ($ :strong (first (:unconfirmed (latest review)))) ($ :p {:class "muted"} (str (:title review) " · v" (:version review))))
-                                  ($ :span {:class "task-status"} "검토 필요") ($ icon {:name :chevron})))
-                 (when draft ($ :button {:class "task-row" :on-click #(do (select-doc (:id draft)) (navigate :records))}
-                                 ($ :div ($ :strong (:title draft)) ($ :p {:class "muted"} (str (:kind draft) " · v" (:version draft))))
-                                 ($ :span {:class "task-status"} "초안") ($ icon {:name :chevron})))
-                 (when (pos? pending) ($ :button {:class "task-row" :on-click #(navigate :members)}
-                                         ($ :div ($ :strong "종원 안내") ($ :p {:class "muted"} (str "안내를 기다리는 종원 " pending "명")))
-                                         ($ :span {:class "task-status"} "전화 안내 대기") ($ icon {:name :chevron}))))
-              ($ c/empty-state {:title "확인할 일을 모두 마쳤습니다."}))))
-       ($ :section {:class "home-work"}
-          ($ :h2 "종중 업무")
-          ($ :div {:class "work-grid"}
-             (for [[id icon-name title description] (rest c/nav-items)]
-               ($ :button {:key (name id) :class "work-tile" :on-click #(navigate id)}
-                  ($ icon {:name icon-name :size 28}) ($ :strong title) ($ :span {:class "muted"} description))))))))
-
-(defui consent-page [{:keys [data busy command open-dialog navigate select-doc]}]
-  (let [[tab set-tab] (uix/use-state :requests)
+(defui home-page [{:keys [navigate] :as props}]
+  ($ :<>
+     ($ :div {:class "page-title"} ($ :h1 "종중 홈") ($ :span {:class "page-marker"} "예시 데이터"))
+     ($ assistance/home-assistance props)
+     ($ :section {:class "home-work"}
+        ($ :h2 "종중 업무")
+        ($ :div {:class "work-grid"}
+           (for [[id icon-name title description] (rest c/nav-items)]
+             ($ :button {:key (name id) :class "work-tile" :on-click #(navigate id)}
+                ($ icon {:name icon-name :size 28}) ($ :strong title) ($ :span {:class "muted"} description)))))))
+(defui consent-page [{:keys [data busy command open-dialog navigate select-doc] :as props}]
+  (let [[tab set-tab] (uix/use-state :quick)
         [request-id set-request] (uix/use-state "request01")
         [member-id set-member] (uix/use-state "m01")
         [response set-response] (uix/use-state "agree") [note set-note] (uix/use-state "")
@@ -52,9 +32,11 @@
         current-doc (find-id (get-in data [:documents :records]) (:document_id r))
         outdated (not= (:version current-doc) (:document_version r))]
     ($ :<>
-       ($ :div {:class "page-title"} ($ :h1 "총회·동의") ($ button {:variant "primary" :icon-name :plus :on-click #(open-dialog (if (= tab :requests) :consent-create :meeting-create))} (if (= tab :requests) "동의 요청" "총회 준비")))
-       ($ tabs {:items [[:requests "동의 요청"] [:meetings "총회"]] :value tab :on-change set-tab})
-       (if (= tab :requests)
+       ($ :div {:class "page-title"} ($ :h1 "총회·동의") ($ button {:variant "primary" :icon-name :plus :on-click #(open-dialog (if (= tab :meetings) :meeting-create :consent-create))} (if (= tab :meetings) "총회 준비" "동의 요청")))
+       ($ tabs {:items [[:quick "빠른 응답"] [:requests "전체 응답 현황"] [:meetings "총회"]] :value tab :on-change set-tab})
+       (cond
+         (= tab :quick) ($ assistance/quick-response props)
+         (= tab :requests)
          ($ :div {:class "workflow-columns"}
             ($ :section
                ($ :div {:class "section-toolbar"} ($ :h2 "응답 현황")
@@ -66,7 +48,7 @@
                        (for [[k label] [["agree" "동의"] ["disagree" "거절"] ["withdrawn" "철회"] ["pending" "미응답"]]]
                          ($ :div {:key k} ($ :span {:class "muted"} label) ($ :strong (get totals k 0)))))
                     ($ :div {:class "request-meta"} ($ :span (str "문서 v" (:document_version r))) ($ :span "·") ($ :span (str "기한 " (subs (:deadline r) 0 10)))
-                       ($ :button {:class "text-button" :on-click #(do (select-doc (:document_id r)) (navigate :records))} "연결 문서"))
+                       ($ :button {:class "text-button" :on-click #(do (select-doc (:document_id r) (:document_version r)) (navigate :records))} "연결 문서"))
                     (when outdated ($ :p {:class "inline-warning"} "문서가 개정되었습니다. 새 버전으로 동의를 요청해 주세요."))
                     ($ :div {:class "table-scroll"}
                        ($ :table
@@ -87,7 +69,7 @@
                     ($ :label {:key id} ($ :input {:type "radio" :name "response" :value id :checked (= id response) :on-change #(set-response id)}) label)))
                ($ field {:label "의견"} ($ :textarea {:rows 4 :placeholder "선택 입력" :value note :on-change #(set-note (val-of %))}))
                ($ button {:variant "primary" :disabled (or busy outdated) :on-click #(command "consent.respond" {:request_id (:id r) :document_version (:document_version r) :member_id member-id :response response :note note} "응답을 저장했습니다.")} "응답 저장")))
-         ($ meeting-panel {:data data :busy busy :command command :open-dialog open-dialog :navigate navigate :select-doc select-doc})))))
+         :else ($ meeting-panel {:data data :busy busy :command command :open-dialog open-dialog :navigate navigate :select-doc select-doc})))))
 
 (defui assets-page [{:keys [data busy command open-dialog navigate select-doc] :as props}]
   (let [[tab set-tab] (uix/use-state :land)

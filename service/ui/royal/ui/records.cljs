@@ -92,6 +92,8 @@
                          (when-not (= "public_source" (:mode document))
                            ($ :button {:class "text-button" :disabled busy :on-click #(do (set-version nil) (set-edit-version (:version document)) (set-editing (not editing)))} (if editing "편집 닫기" "수정")))))
                     (when historical? ($ :p {:class "inline-feedback"} "이전 버전 · 읽기 전용"))
+                    (when (> (:version version) 1)
+                      ($ button {:on-click #(open-dialog :document-change {:document_id (:id document) :version (:version version)})} "이전 버전과 변경 비교"))
                     (if (and editing (not historical?))
                       ($ :div {:class "editor"}
                          ($ :textarea {:aria-label "문서 내용" :disabled busy :value draft-text :on-change #(set-drafts (assoc drafts draft-key (val-of %))) :rows 16})

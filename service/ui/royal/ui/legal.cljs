@@ -1,6 +1,6 @@
 (ns royal.ui.legal (:require [uix.core :as uix :refer [defui $]] [clojure.string :as str]
                              [royal.ui.components :as c :refer [icon button badge tabs field val-of won latest find-id]]
-                             [royal.ui.queries :as queries] [royal.ui.ai :as ai]))
+                             [royal.ui.queries :as queries] [royal.ui.ai :as ai] [royal.legal-support :as preparation-rules]))
 
 (defui experts [{:keys [profession request-query open-dialog data busy start-ai ai-drafts set-ai-drafts] :as props}]
   (let [[region set-region] (uix/use-state "") [method set-method] (uix/use-state "")
@@ -57,7 +57,8 @@
                      (for [p (get-in data [:legal :preparations])]
                        ($ :article {:class "preparation-row" :key (:id p)} ($ :div {:class "section-label"} ($ :h2 (:task p)) ($ badge "준비 중"))
                           ($ :p (str "보유: " (str/join ", " (:held p))))
-                          ($ :p {:class "muted"} (str "확인 필요: " (str/join ", " (:missing p))))))
+                          ($ :p {:class "muted"} (str "확인 필요: " (str/join ", " (map :title (preparation-rules/remaining-items p)))))
+                          ($ button {:on-click #(open-dialog :preparation-checklist {:id (:id p)})} "서류 확인·보완 요청")))
                      ($ c/empty-state {:title "저장한 준비 기록이 없습니다."})))
          ($ :div {:class "workflow-columns"}
             ($ :section {:class "preparation-form"}
@@ -65,17 +66,18 @@
                ($ :div {:class "task-choices"}
                   (for [x ["종중 운영 정비" "부동산등기용 등록" "토지 등기 준비" "법인 설립 상담"]]
                     ($ :label {:key x :class (str "task-choice " (when (= task x) "selected"))}
-                       ($ :input {:type "radio" :name "preparation-task" :checked (= task x) :on-change #(set-task x)}) x)))
+                       ($ :input {:type "radio" :name "preparation-task" :checked (= task x) :on-change #(do (set-task x) (set-held #{}))}) x)))
                ($ :h2 {:class "section-gap"} "보유 서류")
                ($ :div {:class "document-checklist"}
-                  (for [x ["규약" "종원 명부" "대표자 기록" "토지 자료"]]
+                  (for [x (get preparation-rules/preparation-templates task)]
                     ($ :label {:key x} ($ :input {:type "checkbox" :checked (contains? held x) :on-change #(set-held (if (contains? held x) (disj held x) (conj held x)))})
                        ($ icon {:name :document :size 18}) x ($ :span {:class "muted small"} (if (contains? held x) "보유" "확인 필요")))))
                ($ field {:label "메모"} ($ :textarea {:rows 3 :value note :on-change #(set-note (val-of %)) :placeholder "확인할 사항"}))
                ($ :div {:class "dialog-actions"}
                   ($ button {:on-click #(open-dialog :document-create {:title (str task " 준비 목록")
-                                                                      :body (str task "\n\n보유 서류\n" (str/join "\n" held) "\n\n확인 필요\n" (str/join "\n" (remove held ["규약" "종원 명부" "대표자 기록" "토지 자료"])) "\n\n메모\n" note)})} "준비 문서 작성")
-                  ($ button {:variant "primary" :disabled busy :on-click #(command "preparation.save" {:task task :held (vec held) :note note} "준비 기록을 저장했습니다.")} "저장")))
+                                                                      :body (str task "\n\n보유 서류\n" (str/join "\n" held) "\n\n확인 필요\n" (str/join "\n" (remove held (get preparation-rules/preparation-templates task))) "\n\n메모\n" note)})} "준비 문서 작성")
+                  ($ button {:variant "primary" :disabled busy :on-click #(-> (command "preparation.save" {:task task :held (vec held) :note note} "목적별 체크리스트를 만들었습니다.")
+                                                                             (.then (fn [ok] (when ok (set-tab :saved)))))} "체크리스트 만들기")))
             ($ :aside {:class "side-form"} ($ :h2 "다음 단계")
                ($ :ol {:class "workflow-steps"} ($ :li "보유 서류 확인") ($ :li "빠진 내용 보완") ($ :li "법무사 후보 비교"))
                ($ :p {:class "muted small"} "신청 목적에 따라 필요한 서류가 달라집니다.")

@@ -18,7 +18,19 @@
          ($ :div {:class "tree-children"}
             (for [r children :let [child (find-id members (:child_id r))] :when (not (contains? (set path) (:id child)))]
               ($ tree-node {:key (:id r) :member child :members members :relations relations :select select :path (conj path (:id member))})))))))
-(defui members-page [{:keys [data busy command open-dialog]}]
+(defui contact-editor [{:keys [person busy command]}]
+  (let [[method set-method] (uix/use-state (or (:preferred_contact person) "미확인"))
+        [note set-note] (uix/use-state (or (:contact_note person) ""))
+        [state set-state] (uix/use-state (:contact_state person))]
+    ($ :div {:class "contact-editor"}
+       ($ field {:label "선호 연락 방법"} ($ :select {:value method :on-change #(set-method (val-of %))}
+                                               (for [m ["미확인" "전화" "문자" "온라인" "우편" "방문"]] ($ :option {:key m :value m} m))))
+       ($ field {:label "연락 상태"} ($ :select {:value state :on-change #(set-state (val-of %))}
+                                          (for [s ["미확인" "확인" "연락 실패"]] ($ :option {:key s :value s} s))))
+       ($ field {:label "연락 메모"} ($ :textarea {:rows 2 :max-length 500 :value note :on-change #(set-note (val-of %))}))
+       ($ button {:disabled busy :on-click #(command "member.update" {:id (:id person) :expected_version (:version person)
+                                                                       :preferred_contact method :contact_note note :contact_state state} "연락 방법과 상태를 저장했습니다.")} "연락 정보 저장"))))
+(defui members-page [{:keys [data busy command open-dialog feedback]}]
   (let [[tab set-tab] (uix/use-state :list) [filter-by set-filter] (uix/use-state :all)
         [query set-query] (uix/use-state "") [selected set-selected] (uix/use-state nil)
         [ascending set-ascending] (uix/use-state false)
@@ -31,6 +43,8 @@
         roots (filter #(and (contains? connected (:id %)) (not-any? (fn [r] (= (:child_id r) (:id %))) relations)) members)]
     ($ :<>
        ($ :div {:class "page-title"} ($ :h1 "종원 명부") ($ :span {:class "page-marker"} "예시 데이터"))
+       ($ :div {:class "section-toolbar"} ($ :p {:class "muted small"} "가계 관계와 직책·접근 권한은 별도로 관리합니다.")
+          ($ button {:icon-name :upload :on-click #(open-dialog :roster-import)} "엑셀 가져오기"))
        ($ tabs {:items [[:list "종원 목록"] [:tree "종원 계층"] [:roles "직책·권한"]] :value tab :on-change set-tab})
        (when (= tab :roles)
          ($ :section
@@ -79,8 +93,11 @@
             ($ :dl {:class "definition-list"}
                ($ :dt "가입") ($ :dd (if (:joined person) "가입" "미가입"))
                ($ :dt "연락 상태") ($ :dd (:contact_state person))
+               ($ :dt "연락처") ($ :dd (or (not-empty (:phone person)) "미등록"))
                ($ :dt "세대·계통") ($ :dd (if (:generation person) (str (:generation person) "세 · " (:lineage person)) "미확인")))
             ($ :h3 "가계 관계")
+            ($ contact-editor {:key (:id person) :person person :busy busy :command command})
+            (when feedback ($ :p {:class (if (:error feedback) "inline-warning" "inline-feedback") :role "status"} (:text feedback)))
             (for [[dir label] [[:parent "상위 종원"] [:child "하위 종원"]]]
               ($ :div {:class "relation-group" :key (name dir)} ($ :span {:class "muted small"} label)
                  (let [related (filter #(= selected (get % (if (= dir :parent) :child_id :parent_id))) relations)]

@@ -2,6 +2,7 @@
 
 (defn items [m] (:items m))
 (defn requests [m] (:requests m))
+(defn responses [m] (:responses m))
 (defn meeting! [m id] (c/find! (items m) id))
 (defn create-meeting [m ctx p member-ids]
   (update m :items conj {:id (:id ctx) :title (c/text! (:title p) "총회명")

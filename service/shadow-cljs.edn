@@ -6,7 +6,8 @@
        :output-dir "generated/ui"
        :js-options {:js-provider :import}
        :modules {:main {:exports {App royal.ui.core/app
-                                 configureMapLoader royal.ui.parcel-map/configure-loader!}}}}
+                                 configureMapLoader royal.ui.parcel-map/configure-loader!
+                                 configureRosterLoader royal.ui.roster-import/configure-loader!}}}}
   :domain {:target :esm
            :output-dir "generated/domain"
            :modules {:main {:exports {initialState royal.domain/initial-state-js
