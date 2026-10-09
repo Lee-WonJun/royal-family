@@ -1,0 +1,93 @@
+{
+  "date": "2026-10-09",
+  "sources": [
+    {
+      "file": "news-jmbc.jpg",
+      "url": "https://www.jmbc.co.kr/news/view/68182",
+      "description": "2026-09-22 전주MBC 기사에 표시된 보도 썸네일 직접 캡처. 기사의 판단을 개별 종중 사건에 일반화하지 않음."
+    },
+    {
+      "file": "clan-pine.png",
+      "kind": "generated",
+      "tool": "built-in image_gen",
+      "prompt": "Use case: productivity-visual. Asset type: background illustration for a Korean presentation about a clan and its shared land and records. Primary request: a refined editorial illustration of a large Korean pine tree with visible branching roots, a small Korean tiled-roof ancestral hall and quiet hills at its foot. Style: restrained flat screenprint, bold simple silhouette forms, subtle paper grain, professional magazine illustration, no cute cartoon, no shiny 3D. Palette: warm ivory #F5F2E9 background, dark forest green #183E35, olive sage and a tiny muted terracotta accent. Composition: landscape 16:9, tree and ancestral hall in right 52% of image, left 44% almost entirely blank ivory for a large editable presentation title. Subject takes up generous area, crown at top right, broad roots across bottom right. Absolutely no lettering, no symbols that imitate a real clan crest, no logos, no borders, no watermark. This is a conceptual illustration, not a specific site."
+    },
+    {
+      "file": "records-ai.png",
+      "kind": "generated",
+      "tool": "built-in image_gen",
+      "prompt": "Use case: productivity-visual. Asset type: supporting editorial illustration for a slide about AI assisting with paper records. Primary request: overhead editorial illustration of a small stack of old meeting papers, a contemporary compact audio recorder, and a smartphone with a simple abstract document screen. One tidy focal cluster, a few cream sheets with olive marks suggest writing without any readable text. Palette: warm ivory #F5F2E9 background, very dark forest green #183E35, muted olive, one terracotta accent. Style: mature minimal flat screenprint with crisp edges and subtle paper grain, no gradients, no glossy 3D, no whimsical mascots. Composition: landscape 16:9, visual object cluster on right 52% and plenty of clear blank ivory on left 44% for editable Korean text; each object recognizable at presentation scale. No letters, no numbers, no logos, no watermark, no hands."
+    },
+    {
+      "file": "credit-request.png",
+      "source": "rawdata/PPTPlan/크래딧적용.png",
+      "description": "크레딧 적용 요청 화면. 적용 완료나 잔액의 증빙이 아님."
+    },
+    {
+      "file": "icons/*.svg",
+      "url": "https://github.com/lucide-icons/lucide/tree/main/icons",
+      "license": "ISC",
+      "description": "Lucide 원본 SVG를 그대로 사용."
+    },
+    {
+      "file": "news-bubb-title.jpg",
+      "url": "https://www.bubb.co.kr/news/articleView.html?idxno=4550",
+      "title": "\"종손 지위, 사적 계약으로 양도 불가\"",
+      "published": "2026-04-28",
+      "type": "실제 원문 제목 캡처"
+    },
+    {
+      "file": "news-cctoday-title.jpg",
+      "url": "https://www.cctoday.co.kr/news/articleView.html?idxno=2233033",
+      "title": "논산 관촉동 산림훼손 공방…종중·농원 법정으로",
+      "published": "2026-07-10",
+      "type": "실제 원문 제목 캡처. 당사자 주장과 확정 사실을 구분."
+    },
+    {
+      "file": "news-hankyung-title.jpg",
+      "url": "https://magazine.hankyung.com/business/article/202607168245b",
+      "title": "종중땅 팔아 돈 챙긴 '가짜 대표'…종중도 받은 돈은 돌려줘야 [법으로 읽는 부동산]",
+      "published": "2026-07-24",
+      "type": "실제 원문 제목 캡처"
+    }
+  ],
+  "sourcePlan": "rawdata/PPTPlan/script.md",
+  "fontFamilies": [
+    "Noto Sans KR",
+    "Noto Serif KR"
+  ],
+  "iconsUsed": [
+    "phone",
+    "git-branch",
+    "trees",
+    "landmark",
+    "files",
+    "users-round",
+    "briefcase-business",
+    "scale",
+    "user-round-cog",
+    "monitor",
+    "arrow-right",
+    "blocks",
+    "database",
+    "bot",
+    "folder-check",
+    "users",
+    "square-check-big",
+    "file-pen-line",
+    "mic",
+    "file-search",
+    "bell-ring",
+    "book-open",
+    "map",
+    "clipboard-list",
+    "globe",
+    "laptop",
+    "network",
+    "map-pin",
+    "messages-square"
+  ],
+  "finalPresentation": "명문가_발표초안_v2.pptx",
+  "slideCount": 23,
+  "audio": "통화 녹음은 발표자가 외부 플레이어로 재생"
+}
