@@ -1,0 +1,9 @@
+# Local environment files; empty templates remain shareable.
+.env
+.env.*
+!.env.template
+!.env.example
+
+# Installed dependencies and temporary presentation build workspaces.
+node_modules/
+/.codex/ppt-build-*/
