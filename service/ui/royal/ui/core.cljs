@@ -2,16 +2,8 @@
   (:require [uix.core :as uix :refer [defui $]] [clojure.string :as str]
             [royal.ui.components :as c :refer [icon button badge tabs val-of latest]]
             [royal.ui.members :as members] [royal.ui.records :as records] [royal.ui.workflows :as workflows]
-            [royal.ui.legal :as legal] [royal.ui.dialogs :as dialogs] [royal.ui.accounts :as accounts]))
-
-(defn request-json [url options]
-  (-> (js/fetch url (clj->js options))
-      (.then (fn [r] (.json r)))
-      (.then (fn [r] (let [data (js->clj r :keywordize-keys true)]
-                      (if (:ok data) data
-                        (let [error (js/Error. (get-in data [:error :message] "요청을 처리하지 못했습니다."))]
-                          (aset error "code" (get-in data [:error :code])) (throw error))))))))
-(defn post-json [url body] (request-json url {:method "POST" :headers {"Content-Type" "application/json"} :body (js/JSON.stringify (clj->js body))}))
+            [royal.ui.legal :as legal] [royal.ui.dialogs :as dialogs] [royal.ui.accounts :as accounts]
+            [royal.ui.transport :as transport :refer [request-json post-json]]))
 
 (defui sidebar [{:keys [page navigate open-settings open-search open-notifications open-profile persona]}]
   ($ :<>
@@ -32,50 +24,109 @@
 (defui app []
   (let [[data set-data] (uix/use-state nil) [error set-error] (uix/use-state nil) [page set-page] (uix/use-state :home)
         [menu-open set-menu] (uix/use-state false) [settings-open set-settings] (uix/use-state false)
-        [modal set-modal] (uix/use-state nil) [toast set-toast] (uix/use-state nil) [busy set-busy] (uix/use-state false)
+        [modal set-modal] (uix/use-state nil) [toast set-toast] (uix/use-state nil) [operation set-operation] (uix/use-state nil)
         [selected-doc set-selected-doc] (uix/use-state "doc01") [drafts set-drafts] (uix/use-state {})
         [search set-search] (uix/use-state "") [personas set-personas] (uix/use-state [])
         [persona set-persona] (uix/use-state nil) [initialized set-initialized] (uix/use-state false)
         [access set-access] (uix/use-state {:unlocked false :configured false :ready_features []})
-        busy-ref (uix/use-ref false)
-        load (uix/use-callback (fn [] (-> (request-json "/api/state" {})
-                                        (.then #(do (set-data (:state %)) (set-persona (:session %)) (set-personas (:personas %)) (set-access (:access %)) (set-error nil)))
-                                        (.catch #(set-error (.-message %))) (.finally #(set-initialized true)))) [])
-        navigate (fn [p] (set-page p) (set-menu false) (set-toast nil)
+        busy-ref (uix/use-ref nil) data-ref (uix/use-ref nil) epoch (uix/use-ref 0)
+        load-controller (uix/use-ref nil) retries (uix/use-ref {})
+        busy (some? operation)
+        notify (fn [value] (set-toast (assoc value :id (str (random-uuid)))))
+        dismiss-toast (uix/use-callback #(set-toast nil) [])
+        apply-state (uix/use-callback (fn [incoming token]
+                      (when (and (= token @epoch) (transport/accept-snapshot? @data-ref incoming))
+                        (reset! data-ref incoming) (set-data incoming))) [])
+        load (uix/use-callback
+              (fn []
+                (when @load-controller (.abort @load-controller))
+                (let [controller (js/AbortController.) token @epoch]
+                  (reset! load-controller controller)
+                  (-> (request-json "/api/state" {:signal (.-signal controller)})
+                      (.then (fn [r] (when (and (= token @epoch) (not (.-aborted (.-signal controller))))
+                                      (apply-state (:state r) token) (set-persona (:session r))
+                                      (set-personas (:personas r)) (set-access (:access r)) (set-error nil)) true))
+                      (.catch #(do (when (and (= token @epoch) (not (transport/aborted? %))) (set-error (.-message %))) false))
+                      (.finally #(when (= token @epoch) (set-initialized true)))))) [apply-state])
+        navigate (fn [p] (set-page p) (set-menu false)
                    (when (exists? js/window) (set! (.. js/window -location -hash) (name p))))
-        open-dialog (uix/use-callback (fn ([kind] (set-modal {:kind kind})) ([kind item] (set-modal {:kind kind :item item}))) [])
-        command (fn [op payload message]
-                  (if @busy-ref (js/Promise.resolve false)
-                    (do (reset! busy-ref true) (set-busy true)
-                        (-> (post-json "/api/command" {:command op :payload payload :expected_revision (:revision data)
-                                                       :generation (:generation data) :idempotency_key (str (random-uuid))})
-                            (.then (fn [r] (set-data (:state r)) (set-toast {:text message})
-                                     (when (= op "reset") (set-drafts {}) (set-page :home) (set-selected-doc "doc01") (set-settings false) (set-access (assoc access :unlocked false))) true))
-                            (.catch (fn [e] (when (= "developer_code_required" (aget e "code")) (set-access (assoc access :unlocked false :expires_at nil)))
-                                      (set-toast {:text (.-message e) :error true}) false))
-                            (.finally #(do (reset! busy-ref false) (set-busy false)))))))
-        request-query (uix/use-callback (fn [q] (-> (post-json "/api/query" q) (.then (fn [r] (:value r))) (.catch #(do (set-toast {:text (.-message %) :error true}) nil)))) [])
-        upload (fn [file]
-                 (when-not @busy-ref
-                   (reset! busy-ref true) (set-busy true)
-                   (let [form (js/FormData.)]
-                     (.append form "file" file) (.append form "generation" (str (:generation data)))
-                     (.append form "expected_revision" (str (:revision data))) (.append form "idempotency_key" (str (random-uuid)))
-                     (-> (request-json "/api/files" {:method "POST" :body form})
-                         (.then (fn [r] (set-data (:state r)) (set-selected-doc (:id (last (get-in r [:state :documents :records])))) (set-toast {:text "원본을 등록했습니다."})))
-                         (.catch #(set-toast {:text (.-message %) :error true}))
-                         (.finally #(do (reset! busy-ref false) (set-busy false)))))))
-        choose (fn [p] (set-busy true)
-                 (-> (post-json "/api/session" {:persona_id (:id p)})
-                     (.then (fn [_] (set-persona p) (set-access (assoc access :unlocked false)) (navigate (keyword (:page p))) (set-drafts {}) (load)))
-                     (.catch #(set-error (.-message %))) (.finally #(set-busy false))))
-        change-account (fn [] (-> (request-json "/api/session" {:method "DELETE"})
-                                   (.then (fn [_] (set-persona nil) (set-access (assoc access :unlocked false)) (set-settings false) (set-modal nil) (set-menu false) (set-toast nil) (set-drafts {})))
-                                   (.catch #(set-toast {:text (.-message %) :error true}))))
-        unlock (fn [code] (-> (post-json "/api/ai-access" {:code code})
-                              (.then (fn [r] (set-access (:access r)) true))))
-        lock (fn [] (-> (request-json "/api/ai-access" {:method "DELETE"}) (.then #(set-access (:access %)))))
-        props {:data data :command command :navigate navigate :open-dialog open-dialog :select-doc set-selected-doc :request-query request-query}
+        open-dialog (uix/use-callback (fn ([kind] (set-toast nil) (set-modal {:kind kind})) ([kind item] (set-toast nil) (set-modal {:kind kind :item item}))) [])
+        begin (fn [op]
+                (if @busy-ref
+                  (do (notify {:text "다른 작업을 처리 중입니다. 완료 후 다시 시도해 주세요." :error true}) nil)
+                  (let [id (str (random-uuid))]
+                    (reset! busy-ref id) (set-operation (assoc op :id id)) id)))
+        finish (fn [id] (when (= id @busy-ref) (reset! busy-ref nil) (set-operation nil)))
+        command (fn perform-command [op payload message]
+                  (if-let [id (begin {:kind :save :label (if (= op "reset") "초기화 중" "저장 중")})]
+                    (let [token @epoch key [op payload]
+                          packet (transport/retry-packet (get @retries key) @data-ref op payload (str (random-uuid)))]
+                      (-> (post-json "/api/command" packet)
+                          (.then (fn [r]
+                                   (when (= token @epoch)
+                                     (apply-state (:state r) token) (swap! retries dissoc key) (notify {:text message})
+                                     (when (= op "reset")
+                                       (swap! epoch inc) (reset! retries {}) (set-drafts {}) (set-page :home)
+                                       (set-selected-doc "doc01") (set-settings false)
+                                       (set-access #(assoc % :unlocked false :expires_at nil)))) true))
+                          (.catch (fn [e]
+                                    (when (= token @epoch)
+                                      (when (= "developer_code_required" (aget e "code")) (set-access #(assoc % :unlocked false :expires_at nil)))
+                                      (if (transport/uncertain? e)
+                                        (do (swap! retries assoc key packet)
+                                            (notify {:text (str (.-message e) " 저장 여부를 같은 요청으로 확인할 수 있습니다.") :error true
+                                                     :retry #(perform-command op payload message) :retry-label "저장 확인"}))
+                                        (do (swap! retries dissoc key)
+                                            (notify (cond-> {:text (.-message e) :error true}
+                                                      (contains? #{"version_conflict" "stale_generation"} (aget e "code"))
+                                                      (assoc :retry load :retry-label "최신 자료 불러오기")))))) false))
+                          (.finally #(finish id))))
+                    (js/Promise.resolve false)))
+        request-query (uix/use-callback (fn [q options] (-> (post-json "/api/query" q options) (.then (fn [r] (:value r))))) [])
+        upload (fn upload-file
+                 ([file] (upload-file file {:generation (:generation @data-ref) :revision (:revision @data-ref) :key (str (random-uuid))}))
+                 ([file intent]
+                  (cond
+                    (or (zero? (.-size file)) (> (.-size file) (* 10 1024 1024)))
+                    (do (notify {:text "내용이 있는 10MB 이하 파일을 선택해 주세요." :error true}) (js/Promise.resolve false))
+                    (not= (:generation intent) (:generation @data-ref))
+                    (do (notify {:text "초기화 전 파일입니다. 다시 선택해 주세요." :error true}) (js/Promise.resolve false))
+                    :else
+                    (if-let [id (begin {:kind :upload :label "원본 등록 중" :filename (.-name file) :progress nil})]
+                      (let [token @epoch form (js/FormData.)]
+                        (.append form "file" file) (.append form "generation" (str (:generation intent)))
+                        (.append form "expected_revision" (str (:revision intent))) (.append form "idempotency_key" (:key intent))
+                        (-> (transport/upload-file form #(when (= token @epoch) (set-operation (fn [op] (if (= (:id op) id) (assoc op :progress %) op)))))
+                            (.then (fn [r] (when (= token @epoch) (apply-state (:state r) token)
+                                            (set-selected-doc (or (:object_id r) (:id (last (get-in r [:state :documents :records])))))
+                                            (notify {:text "원본을 등록했습니다."})) true))
+                            (.catch (fn [e]
+                                      (when (= token @epoch)
+                                        (notify {:text (.-message e) :error true :retry-label (if (transport/uncertain? e) "저장 확인" "최신 자료 불러오기")
+                                                 :retry (if (transport/uncertain? e) #(upload-file file intent) load)})) false))
+                            (.finally #(finish id)))) (js/Promise.resolve false)))))
+        choose (fn [p]
+                 (if-let [id (begin {:kind :session :label "시연 계정 여는 중" :persona-id (:id p)})]
+                   (do (swap! epoch inc) (set-error nil)
+                       (-> (post-json "/api/session" {:persona_id (:id p)})
+                           (.then (fn [_] (set-persona p) (set-access #(assoc % :unlocked false))
+                                    (navigate (keyword (:page p))) (set-drafts {}) (reset! retries {}) (load)))
+                           (.catch #(set-error (.-message %))) (.finally #(finish id)))) (js/Promise.resolve false)))
+        change-account (fn []
+                         (if-let [id (begin {:kind :session :label "계정 변경 중"})]
+                           (do (swap! epoch inc)
+                               (-> (request-json "/api/session" {:method "DELETE"})
+                                   (.then (fn [_] (set-persona nil) (set-access #(assoc % :unlocked false)) (set-settings false)
+                                            (set-modal nil) (set-menu false) (set-toast nil) (set-drafts {}) (reset! retries {})))
+                                   (.catch #(notify {:text (.-message %) :error true})) (.finally #(finish id)))) (js/Promise.resolve false)))
+        unlock (fn [code] (let [token @epoch]
+                            (-> (post-json "/api/ai-access" {:code code})
+                                (.then (fn [r] (when (= token @epoch) (set-access (:access r))) true)))))
+        lock (fn [] (let [token @epoch]
+                      (-> (request-json "/api/ai-access" {:method "DELETE"})
+                          (.then #(when (= token @epoch) (set-access (:access %))))
+                          (.catch #(notify {:text (.-message %) :error true})))))
+        props {:data data :busy busy :command command :navigate navigate :open-dialog open-dialog :select-doc set-selected-doc :request-query request-query}
         side-props {:page page :persona persona :navigate navigate :open-settings #(do (set-settings true) (set-menu false))
                     :open-search #(do (open-dialog :search) (set-menu false)) :open-notifications #(do (open-dialog :notifications) (set-menu false))
                     :open-profile #(do (open-dialog :profile) (set-menu false))}]
@@ -85,7 +136,8 @@
                       (let [listener (fn [e] (when (and (or (.-ctrlKey e) (.-metaKey e)) (= "k" (str/lower-case (.-key e))))
                                               (.preventDefault e) (open-dialog :search)))]
                         (.addEventListener js/window "keydown" listener)
-                        #(.removeEventListener js/window "keydown" listener))) [load open-dialog])
+                        #(do (.removeEventListener js/window "keydown" listener)
+                             (swap! epoch inc) (when @load-controller (.abort @load-controller))))) [load open-dialog])
     (uix/use-effect
      (fn []
        (if-let [expiry (:expires_at access)]
@@ -93,9 +145,9 @@
                                     (max 0 (- expiry (js/Date.now))))]
            #(js/clearTimeout timer)) js/undefined)) [access])
     (cond
-      (not initialized) ($ :main {:class "account-screen"} ($ :div {:class "load-state" :role "status"} "시연 계정 불러오는 중"))
-      (and (nil? persona) (nil? error)) ($ accounts/account-picker {:personas personas :choose choose :busy busy :error error})
-      :else ($ :div {:class "app-shell" :aria-busy busy}
+      (not initialized) ($ :main {:class "account-screen"} ($ :div {:class "account-content"} ($ c/skeleton {:label "시연 계정 불러오는 중" :rows 5})))
+      (and (nil? persona) (seq personas)) ($ accounts/account-picker {:personas personas :choose choose :busy busy :pending-id (:persona-id operation) :error error})
+      :else ($ :div {:class "app-shell"}
        ($ :a {:class "skip-link" :href "#main-content"} "본문으로")
        ($ :aside {:class "sidebar"} ($ sidebar side-props))
        ($ :header {:class "mobile-header"} ($ c/icon-button {:name :menu :label "메뉴 열기" :on-click #(set-menu true)})
@@ -112,7 +164,7 @@
                         :legal ($ legal/legal-page props)
                         ($ workflows/home-page props))))
        (when menu-open ($ c/dialog {:title "메뉴" :class "nav-dialog" :on-close #(set-menu false)} ($ sidebar side-props)))
-       (when (and settings-open data) ($ dialogs/settings-panel {:data data :access access :unlock unlock :lock lock :command command :on-close #(set-settings false) :open-dialog open-dialog}))
+       (when (and settings-open data) ($ dialogs/settings-panel {:data data :busy busy :access access :unlock unlock :lock lock :command command :feedback toast :on-close #(set-settings false) :open-dialog open-dialog}))
        (when (and modal data)
          (case (:kind modal)
            :search ($ c/dialog {:title "검색" :on-close #(set-modal nil)}
@@ -129,8 +181,7 @@
                         ($ :div {:class "profile-detail"} ($ :span {:class "avatar large"} "이") ($ :h3 (:name persona)) ($ badge (:role persona)))
                         ($ :dl {:class "definition-list"} ($ :dt "종중") ($ :dd "임영대군파 종중") ($ :dt "권장 시나리오") ($ :dd (:scenario persona))
                            ($ :dt "접근 범위") ($ :dd "시연 관리 기능"))
-                        ($ button {:on-click change-account} "계정 변경"))
-           ($ dialogs/form-dialog {:key (name (:kind modal)) :kind (:kind modal) :item (:item modal) :data data :command command :on-close #(set-modal nil)})))
-       (when toast ($ :div {:class (str "toast " (when (:error toast) "toast-error")) :role (if (:error toast) "alert" "status")}
-                      ($ icon {:name (if (:error toast) :alert :check) :size 18}) ($ :span (:text toast))
-                      ($ c/icon-button {:name :close :label "알림 닫기" :on-click #(set-toast nil)})))))))
+                        ($ button {:disabled busy :on-click change-account} "계정 변경"))
+           ($ dialogs/form-dialog {:key (name (:kind modal)) :kind (:kind modal) :item (:item modal) :data data :command command :feedback toast :on-close #(set-modal nil)})))
+       ($ c/activity {:operation operation})
+       (when (and toast (not modal) (not settings-open)) ($ c/notification {:key (:id toast) :toast toast :dismiss dismiss-toast}))))))

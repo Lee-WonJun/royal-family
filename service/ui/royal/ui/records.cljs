@@ -1,16 +1,17 @@
 (ns royal.ui.records (:require [uix.core :as uix :refer [defui $]] [clojure.string :as str]
                                [royal.ui.components :as c :refer [icon button badge status tabs field val-of find-id latest]]))
 
-(defui records-page [{:keys [data command open-dialog upload selected select drafts set-drafts]}]
+(defui records-page [{:keys [data busy command open-dialog upload selected select drafts set-drafts]}]
   (let [[category set-category] (uix/use-state :all) [tab set-tab] (uix/use-state :draft)
         [query set-query] (uix/use-state "") [mobile-detail set-mobile-detail] (uix/use-state false)
         [version-num set-version] (uix/use-state nil) [editing set-editing] (uix/use-state false)
+        [edit-version set-edit-version] (uix/use-state nil)
         input-ref (uix/use-ref nil)
         records (get-in data [:documents :records])
         shown (filter #(and (str/includes? (:title %) query) (case category :review (= "in_review" (:status (latest %))) :confirmed (= "internally_confirmed" (:status (latest %))) true)) records)
         document (or (find-id records selected) (first shown))
         version (or (find-id (map #(assoc % :id (:version %)) (:versions document)) version-num) (latest document))
-        draft-key (str (:id document) ":" (:version document))
+        draft-key (str (:id document) ":" (or edit-version (:version document)))
         draft-text (get drafts draft-key (:body version))
         pick (fn [id] (select id) (set-mobile-detail true) (set-version nil) (set-editing false) (set-tab :draft))]
     ($ :div {:class (str "records-layout " (when mobile-detail "show-detail"))}
@@ -20,9 +21,9 @@
           ($ :div {:class "record-tools"}
              ($ :div {:class "search-input"} ($ icon {:name :search :size 18}) ($ :input {:aria-label "자료 검색" :placeholder "기록 검색" :value query :on-change #(set-query (val-of %))}))
              ($ :input {:ref input-ref :type "file" :class "sr-only" :aria-label "원본 파일 선택" :accept ".txt,.md,.csv,.pdf,.png,.jpg,.jpeg,.wav,.mp3,.m4a"
-                        :on-change #(when-let [file (aget (.. % -target -files) 0)] (upload file))})
+                        :disabled busy :on-change #(when-let [file (aget (.. % -target -files) 0)] (upload file) (set! (.. % -target -value) ""))})
              ($ button {:icon-name :plus :on-click #(open-dialog :document-create)} "새 문서")
-             ($ button {:icon-name :upload :on-click #(.click @input-ref)} "원본 등록"))
+             ($ button {:icon-name :upload :disabled busy :on-click #(.click @input-ref)} "원본 등록"))
           ($ :div {:class "record-list-items"}
              (for [d shown]
                ($ :button {:key (:id d) :class (str "record-item " (when (= (:id d) (:id document)) "selected")) :on-click #(pick (:id d))}
@@ -63,11 +64,12 @@
                  ($ :<>
                     ($ :div {:class "section-label document-version"}
                        ($ :span {:class "muted small"} (str "문서 v" (:version version) (when (= (:mode document) "mock") " · 예시 초안")))
-                       ($ :button {:class "text-button" :on-click #(do (set-version nil) (set-editing (not editing)))} (if editing "편집 닫기" "수정")))
+                       ($ :button {:class "text-button" :disabled busy :on-click #(do (set-version nil) (set-edit-version (:version document)) (set-editing (not editing)))} (if editing "편집 닫기" "수정")))
                     (if editing
                       ($ :div {:class "editor"}
-                         ($ :textarea {:aria-label "문서 내용" :value draft-text :on-change #(set-drafts (assoc drafts draft-key (val-of %))) :rows 16})
-                         ($ :div {:class "dialog-actions"} ($ button {:variant "primary" :on-click #(-> (command "document.revise" {:id (:id document) :expected_version (:version document) :body draft-text} "새 버전을 저장했습니다.")
+                         ($ :textarea {:aria-label "문서 내용" :disabled busy :value draft-text :on-change #(set-drafts (assoc drafts draft-key (val-of %))) :rows 16})
+                         (when (and edit-version (not= edit-version (:version document))) ($ :p {:class "inline-feedback error"} "새 버전이 있습니다. 작성 중인 내용은 유지됩니다. 최신 원문을 확인해 주세요."))
+                         ($ :div {:class "dialog-actions"} ($ button {:variant "primary" :disabled busy :on-click #(-> (command "document.revise" {:id (:id document) :expected_version edit-version :body draft-text} "새 버전을 저장했습니다.")
                                                                                                   (.then (fn [ok] (when ok (set-editing false) (set-version nil)))))} "새 버전 저장")))
                       ($ :div {:class "document-text"}
                          (for [[i section] (map-indexed vector (str/split (:body version) #"\n\n"))]
@@ -86,7 +88,7 @@
                ($ :div {:class "actions"}
                   (when (not= "internally_confirmed" (:status (latest document)))
                     ($ button {:on-click #(open-dialog :review-note document)} "검토 의견"))
-                  ($ button {:variant "primary" :disabled (or editing (= "internally_confirmed" (:status (latest document))))
+                  ($ button {:variant "primary" :disabled (or busy editing (= "internally_confirmed" (:status (latest document))))
                              :on-click #(command "document.review" {:id (:id document) :expected_version (:version document)
                                                                    :action (if (= "draft" (:status (latest document))) "submit" "confirm")}
                                                   (if (= "draft" (:status (latest document))) "검토를 요청했습니다." "검토를 완료했습니다."))}

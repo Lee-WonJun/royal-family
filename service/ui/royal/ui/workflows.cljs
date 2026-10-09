@@ -33,7 +33,7 @@
                ($ :button {:key (name id) :class "work-tile" :on-click #(navigate id)}
                   ($ icon {:name icon-name :size 28}) ($ :strong title) ($ :span {:class "muted"} description))))))))
 
-(defui consent-page [{:keys [data command open-dialog navigate select-doc]}]
+(defui consent-page [{:keys [data busy command open-dialog navigate select-doc]}]
   (let [[tab set-tab] (uix/use-state :requests)
         [request-id set-request] (uix/use-state "request01")
         [member-id set-member] (uix/use-state "m01")
@@ -82,7 +82,7 @@
                   (for [[id label] [["agree" "동의"] ["disagree" "거절"] ["withdrawn" "철회"]]]
                     ($ :label {:key id} ($ :input {:type "radio" :name "response" :value id :checked (= id response) :on-change #(set-response id)}) label)))
                ($ field {:label "의견"} ($ :textarea {:rows 4 :placeholder "선택 입력" :value note :on-change #(set-note (val-of %))}))
-               ($ button {:variant "primary" :disabled outdated :on-click #(command "consent.respond" {:request_id (:id r) :document_version (:document_version r) :member_id member-id :response response :note note} "응답을 저장했습니다.")} "응답 저장")))
+               ($ button {:variant "primary" :disabled (or busy outdated) :on-click #(command "consent.respond" {:request_id (:id r) :document_version (:document_version r) :member_id member-id :response response :note note} "응답을 저장했습니다.")} "응답 저장")))
          ($ :section
             ($ :div {:class "section-toolbar"}
                ($ :select {:aria-label "총회 선택" :value (:id meeting) :on-change #(set-meeting (val-of %))}
@@ -100,14 +100,14 @@
                                                    [:attendance [["pending" "미확인"] ["present" "참석"] ["absent" "불참"] ["proxy" "위임"]] "pending"]
                                                    [:votes [["pending" "미응답"] ["agree" "찬성"] ["disagree" "반대"] ["abstain" "기권"]] "pending"]]]
                             ($ :td {:key (name f)}
-                               ($ :select {:aria-label (str (:name m) " " (case f :notices "안내" :attendance "참석" "표결"))
+                               ($ :select {:disabled busy :aria-label (str (:name m) " " (case f :notices "안내" :attendance "참석" "표결"))
                                            :value (get-in meeting [f (keyword id) :value] default)
                                            :on-change #(let [v (val-of %)]
                                                          (if (= v "proxy") (open-dialog :proxy {:meeting meeting :member m})
                                                            (command "meeting.record" {:id (:id meeting) :expected_version (:version meeting) :member_id id :field (name f) :value v} "기록을 저장했습니다.")))}
                                   (for [[v label] choices] ($ :option {:key v :value v :disabled (and (= v "pending") (not= f :attendance))} label)))))))))))))))
 
-(defui assets-page [{:keys [data command open-dialog navigate select-doc]}]
+(defui assets-page [{:keys [data busy command open-dialog navigate select-doc]}]
   (let [[tab set-tab] (uix/use-state :land)
         assets (get-in data [:assets :items]) a (first assets)
         snapshots (get-in data [:assets :snapshots]) current (last snapshots)
@@ -155,7 +155,7 @@
                     ($ :div {:class "section-toolbar"} ($ :span {:class "muted small"} "시연 금액 · 실제 금융 거래 없음")
                        ($ button {:on-click #(open-dialog :document-create {:title "10월 결산 초안" :body (str "10월 결산\n\n수입: " (won income) "\n지출: " (won expense) "\n잔액: " (won (- income expense)) "\n\n증빙 미등록 거래를 확인해 주세요.")})} "결산 작성")))
          :changes ($ :section
-                     ($ :div {:class "section-toolbar"} ($ :h2 "자료 변경") ($ button {:on-click #(command "asset.failure" {:asset_id (:id a)} "확인 실패를 기록했습니다.")} "확인 실패 시연"))
+                     ($ :div {:class "section-toolbar"} ($ :h2 "자료 변경") ($ button {:disabled busy :on-click #(command "asset.failure" {:asset_id (:id a)} "확인 실패를 기록했습니다.")} "확인 실패 시연"))
                      (if (seq (get-in data [:assets :changes]))
                        (for [change (reverse (get-in data [:assets :changes]))]
                          ($ :div {:class "change-row" :key (:id change)}

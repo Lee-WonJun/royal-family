@@ -23,12 +23,25 @@
   ($ :svg {:width (or size 20) :height (or size 20) :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
            :stroke-width 1.65 :stroke-linecap "round" :stroke-linejoin "round" :aria-hidden true :class "icon"}
      ($ :path {:d (get icon-paths name (:document icon-paths))})))
-(defui button [{:keys [children on-click variant icon-name disabled type class]}]
-  ($ :button {:type (or type "button") :class (str "button " (or variant "secondary") " " class)
-              :disabled disabled :on-click on-click}
-     (when icon-name ($ icon {:name icon-name :size 18})) children))
-(defui icon-button [{:keys [name label on-click class]}]
-  ($ :button {:type "button" :class (str "icon-button " class) :aria-label label :title label :on-click on-click}
+(defui spinner [] ($ :span {:class "spinner" :aria-hidden true}))
+(defui button [{:keys [children on-click variant icon-name disabled loading loading-label type class]}]
+  (let [[pending set-pending] (uix/use-state false) latch (uix/use-ref false)
+        alive (uix/use-ref true) busy (or loading pending)]
+    (uix/use-effect (fn [] (reset! alive true) #(reset! alive false)) [])
+    ($ :button {:type (or type "button") :class (str "button " (or variant "secondary") " " class)
+                :disabled (or disabled busy) :aria-busy (boolean busy)
+                :on-click (fn [e]
+                            (when (and on-click (not @latch))
+                              (let [result (on-click e)]
+                                (when (and result (fn? (.-then result)))
+                                  (reset! latch true) (set-pending true)
+                                  (.then result
+                                         #(do (reset! latch false) (when @alive (set-pending false)))
+                                         #(do (reset! latch false) (when @alive (set-pending false))))))))}
+       (if busy ($ spinner) (when icon-name ($ icon {:name icon-name :size 18})))
+       (if busy (or loading-label children) children))))
+(defui icon-button [{:keys [name label on-click class disabled]}]
+  ($ :button {:type "button" :class (str "icon-button " class) :disabled disabled :aria-label label :title label :on-click on-click}
      ($ icon {:name name})))
 (defui badge [{:keys [children tone]}] ($ :span {:class (str "badge " tone)} children))
 (def status-labels {"draft" "초안" "in_review" "검토 중" "internally_confirmed" "확인 완료" "needs_review" "검토 필요"
@@ -43,13 +56,58 @@
   ($ :label {:class "field"} ($ :span {:class "field-label"} label) children (when hint ($ :span {:class "muted small"} hint))))
 (defui empty-state [{:keys [title text action]}]
   ($ :div {:class "empty-state"} ($ icon {:name :document :size 30}) ($ :h3 title) (when text ($ :p text)) action))
-(defui dialog [{:keys [title children on-close class]}]
+(defui dialog [{:keys [title children on-close class busy]}]
   (let [ref (uix/use-ref nil)]
     (uix/use-effect (fn [] (when @ref (.showModal @ref)) js/undefined) [])
-    ($ :dialog {:ref ref :class (str "dialog " class) :on-cancel (fn [e] (.preventDefault e) (on-close))
-                :on-click (fn [e] (when (= (.-target e) @ref) (on-close))) :aria-label title}
+    ($ :dialog {:ref ref :class (str "dialog " class) :on-cancel (fn [e] (.preventDefault e) (when-not busy (on-close)))
+                :on-click (fn [e] (when (and (not busy) (= (.-target e) @ref)) (on-close))) :aria-label title}
        ($ :div {:class "dialog-inner"}
-          ($ :div {:class "dialog-head"} ($ :h2 title) ($ icon-button {:name :close :label "닫기" :on-click on-close})) children))))
+          ($ :div {:class "dialog-head"} ($ :h2 title) ($ icon-button {:name :close :label "닫기" :disabled busy :on-click on-close})) children))))
+
+(defui skeleton [{:keys [label rows]}]
+  ($ :div {:class "skeleton-group" :role "status" :aria-label label}
+     ($ :span {:class "sr-only"} label)
+     (for [i (range (or rows 3))] ($ :div {:key i :class "skeleton-row" :aria-hidden true} ($ :span) ($ :span)))))
+
+(defui query-status [{:keys [loading error retry has-data label]}]
+  (cond
+    error ($ :div {:class "inline-feedback error" :role "alert"} ($ icon {:name :alert :size 18})
+             ($ :span error) ($ button {:on-click retry} "다시 시도"))
+    (and loading has-data) ($ :div {:class "inline-feedback" :role "status"} ($ spinner) ($ :span (or label "새 결과 확인 중")))
+    loading ($ skeleton {:label (or label "자료 불러오는 중")})
+    :else nil))
+
+(defui activity [{:keys [operation]}]
+  (let [[visible set-visible] (uix/use-state false) operation-id (:id operation)]
+    (uix/use-effect (fn []
+                      (set-visible false)
+                      (if operation-id
+                        (let [timer (js/setTimeout #(set-visible true) 600)] #(js/clearTimeout timer)) js/undefined)) [operation-id])
+    (when (and operation visible)
+      ($ :div {:class "activity-banner" :role "status"}
+         ($ spinner) ($ :div {:class "activity-content"}
+                        ($ :span (if (= :upload (:kind operation))
+                                   (if (= 100 (:progress operation)) "파일 저장 중" "파일 전송 중") (:label operation)))
+                        (when (= :upload (:kind operation))
+                          ($ :<>
+                             ($ :span {:class "muted small filename"} (:filename operation))
+                             (if (and (number? (:progress operation)) (< (:progress operation) 100))
+                               ($ :progress {:value (:progress operation) :max 100 :aria-label (str "파일 전송 " (:progress operation) "%")})
+                               ($ :progress {:aria-label "파일 저장 중"})))))
+         (when (and (= :upload (:kind operation)) (number? (:progress operation)) (< (:progress operation) 100))
+           ($ :span {:class "small"} (str (:progress operation) "%")))))))
+
+(defui notification [{:keys [toast dismiss]}]
+  (let [[paused set-paused] (uix/use-state false)]
+    (uix/use-effect
+     (fn [] (if (or paused (:error toast)) js/undefined
+              (let [timer (js/setTimeout dismiss 6000)] #(js/clearTimeout timer)))) [toast paused dismiss])
+    ($ :div {:class (str "toast " (when (:error toast) "toast-error")) :role (if (:error toast) "alert" "status")
+             :on-mouse-enter #(set-paused true) :on-mouse-leave #(set-paused false)
+             :on-focus #(set-paused true) :on-blur #(set-paused false)}
+       ($ icon {:name (if (:error toast) :alert :check) :size 18}) ($ :span (:text toast))
+       (when (:retry toast) ($ button {:on-click (:retry toast)} (or (:retry-label toast) "다시 시도")))
+       ($ icon-button {:name :close :label "알림 닫기" :on-click dismiss}))))
 (defn val-of [e] (.. e -target -value))
 (defn number-of [e] (js/Number (val-of e)))
 (defn won [n] (str (.toLocaleString (or n 0) "ko-KR") "원"))

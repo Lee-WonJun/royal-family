@@ -18,7 +18,7 @@
          ($ :div {:class "tree-children"}
             (for [r children :let [child (find-id members (:child_id r))] :when (not (contains? (set path) (:id child)))]
               ($ tree-node {:key (:id r) :member child :members members :relations relations :select select :path (conj path (:id member))})))))))
-(defui members-page [{:keys [data command open-dialog]}]
+(defui members-page [{:keys [data busy command open-dialog]}]
   (let [[tab set-tab] (uix/use-state :list) [filter-by set-filter] (uix/use-state :all)
         [query set-query] (uix/use-state "") [selected set-selected] (uix/use-state nil)
         [ascending set-ascending] (uix/use-state false)
@@ -82,4 +82,4 @@
                      ($ :span {:class "muted"} "미연결")))))
             ($ :div {:class "dialog-actions"}
                ($ button {:on-click #(open-dialog :relation-add person)} "관계 연결")
-               ($ button {:variant "primary" :on-click #(command "member.update" {:id selected :expected_version (:version person) :outreach "전화 안내 완료" :contact_state "확인"} "안내 기록을 저장했습니다.")} "전화 안내 완료")))))))
+               ($ button {:variant "primary" :disabled busy :on-click #(command "member.update" {:id selected :expected_version (:version person) :outreach "전화 안내 완료" :contact_state "확인"} "안내 기록을 저장했습니다.")} "전화 안내 완료")))))))
