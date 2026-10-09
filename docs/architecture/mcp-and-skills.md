@@ -1,8 +1,8 @@
 # MCP·이벤트·서비스 skills 명세
 
-작성일: 2026-10-09 · 상태: 구현 전 계약 · 기준: [PRD RF-12·13](../prd/hackathon-prd.md#rf-12)
+작성일: 2026-10-09 · 상태: 도구 1차 구현·Events 미연결 · 기준: [PRD RF-12·13](../prd/hackathon-prd.md#rf-12)
 
-웹과 ChatGPT는 [동일한 모듈 공개 기능](system-design.md#modules)을 사용한다. 이 문서는 서비스 기능을 외부에 연결하는 명세이며, 실행 서버나 SKILL.md를 구현한 결과가 아니다.
+웹과 MCP는 [동일한 모듈 공개 기능](system-design.md#modules)을 사용한다. 이 문서는 전체 연결 계약이다. 현재 도구 14개의 HTTP route를 구현했으며 실제 ChatGPT 호출·Events·실행용 SKILL.md는 아직 완료하지 않았다. [구현 현황](../implementation-status.md)을 함께 확인한다.
 
 <a id="endpoint"></a>
 ## 연결과 인증

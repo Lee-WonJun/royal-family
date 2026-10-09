@@ -13,4 +13,6 @@ node_modules/
 
 # Local implementation setup and verification output.
 /.codex/sites-bootstrap/
+/.codex/site-publish/
+/.codex/royal-family-site.tar.gz
 /qa/artifacts/

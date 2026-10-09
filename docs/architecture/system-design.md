@@ -1,6 +1,6 @@
 # 명문가 시스템 설계
 
-작성일: 2026-10-09 · 상태: 구현 전 설계 · 기준: [해커톤 PRD](../prd/hackathon-prd.md)
+작성일: 2026-10-09 · 상태: 1차 구현 진행 · 기준: [해커톤 PRD](../prd/hackathon-prd.md)
 
 ## 구성 원칙
 
@@ -40,7 +40,7 @@ Sites의 서버 실행 환경은 Cloudflare Workers다. JVM은 CLJS 빌드 때�
 | `service/connectors/skills/` | 향후 서비스 이용 SKILL.md. 현재는 [사용 계약](mcp-and-skills.md#skills)만 정의 |
 | `service/.openai/hosting.json` | 향후 Sites identity·D1·R2·MCP capability 선언. 비밀값 제외 |
 
-위 런타임 파일·디렉터리 중 기존 폴더에 없는 것은 향후 구현 위치다. 현재 package.json·shadow-cljs 설정·빌드 명령은 생성하지 않는다. 패키지 버전은 첫 구현에서 Sites starter와 호환되는 버전으로 잠그고 lockfile을 유지한다.
+`package.json`·shadow-cljs 설정·lockfile과 Sites starter 기반 빌드 구성을 생성했다. 실행 명령과 런타임은 [service/README.md](../../service/README.md), 현재 구현 차이와 남은 작업은 [구현 현황](../implementation-status.md)을 따른다. 아래 내용은 전체 목표 설계이며 모든 연결이 완료된 것은 아니다.
 
 <a id="responsive"></a>
 ## 반응형 화면
@@ -50,6 +50,8 @@ Sites의 서버 실행 환경은 Cloudflare Workers다. JVM은 CLJS 빌드 때�
 좁은 화면에서는 메뉴와 설정을 접을 수 있는 패널로, 목록·상세는 한 열로 배치한다. 넓은 화면에서는 옆 메뉴·설정 진입점과 목록·상세를 함께 보여준다. 표·지도는 지역 스크롤을 허용하되 핵심 행동 버튼과 필드 이름을 숨기지 않는다. 메뉴·모달·설정 패널은 화면 안에 들어오고 닫기·키보드 조작·터치가 가능해야 한다.
 
 주요 터치 대상은 44×44 CSS px 이상을 목표로 하고 본문 기본 글자 크기는 16px 이상으로 둔다. 색만으로 mock/실제 호출·실패·동의를 구분하지 않는다. 가로 회전과 200% 확대에서도 입력·선택·작업 ID를 유지한다. 반응형 E2E는 mock 응답으로 수행하며 기기별로 같은 AI를 다시 호출하지 않는다.
+
+UI는 CandidateUi v2의 밝은 단색·얇은 구분선·옅은 사이드바·목록과 상세 구조를 따른다. 문구는 메뉴·상태·행동 위주로 줄인다. 버전·미확인 값·시연 입력처럼 판단에 필요한 설명만 해당 동작 가까이에 둔다. 화면 합격은 GPT-6.1 Sol의 독립 검수로 판정한다.
 
 <a id="modules"></a>
 ## 모듈과 공개 기능
@@ -196,4 +198,4 @@ Sites starter의 build integration을 유지하고 D1·R2와 `mcp` capability를
 
 사이트는 처음 소유자 제한으로 배포한다. 빌드와 배포가 성공해도 실제 OpenAI 호출·MCP 도구·ChatGPT 이벤트 수신을 검증한 것으로 간주하지 않는다. 모델 접근, 플러그인 설치, Work Cloud와 callback 보안 요구의 지원 여부는 최종 연결 검증에서 별도로 기록한다.
 
-현재 설계의 원격 연결·CLJS/Vinext 빌드 호환성은 실행 검증 전이다. 구현 중에는 단위 테스트와 빌드·정적 검사로 경계를 확인하며 전체 업무의 E2E는 [최종 게이트](testing.md#e2e-gate)를 통과한 뒤에만 실행한다. Sites 저장·identity·MCP 처리 방식은 구현 당시 설치된 Sites 스킬과 [공식 Sites 안내](https://learn.chatgpt.com/docs/sites)를 함께 확인한다.
+CLJS ESM·Vinext Worker 빌드 호환성을 확인했다. 원격 API·ChatGPT 연결은 별도 검증 전이다. 구현 중에는 단위 테스트와 빌드·정적 검사로 경계를 확인하며 전체 업무의 E2E는 [최종 게이트](testing.md#e2e-gate)를 통과한 뒤에만 실행한다. Sites 저장·identity·MCP 처리 방식은 구현 당시 설치된 Sites 스킬과 [공식 Sites 안내](https://learn.chatgpt.com/docs/sites)를 함께 확인한다.
