@@ -16,7 +16,8 @@
         requested (:quick-request workflow-drafts)
         card (or (some #(when (= requested (get-in % [:request :id])) %) cards) (first cards))
         r (:request card) key (str member-id ":" (:id r)) draft (get-in workflow-drafts [:responses key] {})
-        response (get draft :response "agree") note (get draft :note "")
+        response (get draft :response (or (get-in card [:response :response]) "agree"))
+        note (get draft :note (or (get-in card [:response :note]) ""))
         change (fn [k v] (set-workflow-drafts #(assoc-in % [:responses key k] v)))]
     ($ :section {:class "quick-response"}
        ($ :div {:class "section-toolbar"} ($ :h2 "내가 응답할 내용") ($ badge "관리자 시연 입력"))
