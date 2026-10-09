@@ -17,3 +17,6 @@ RF-09의 내보내기는 서버에서 `documents.export-records`로 권한과 �
 2026-10-09에 국가법령정보센터에서 [민법 제275조](https://law.go.kr/LSW/lsSideInfoP.do?docCls=jo&joBrNo=00&joNo=0275&lsiSeq=284415&urlMode=lsScJoRltInfoR), [제276조](https://www.law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1009073877)의 표시 시행일 `2026-03-17`과 [대법원 2025다213795](https://www.law.go.kr/LSW/precInfoP.do?precSeq=618205)의 선고일 `2026-02-26`을 확인했다. 조문 사본과 판결요지 정리에는 출처·날짜를 넣었다. 원격 검색이 완료되었다는 뜻은 아니며 AI가 입력으로 받은 사본의 기준일 이후 최신성을 보증하지 않는다.
 
 기존 시연 기록은 보존하고 읽기 전용 공식 사본만 추가한다. 법령·판례 자료를 시연 종중의 실제 규약이나 실제 사건 기록으로 표시하지 않는다.
+
+
+한글 전체 폰트를 포함하고 문맥별 대체 글리프와 합자를 끈다. 화면은 정상이어도 PDF ToUnicode에 없는 대체 문장부호가 복사 시 다른 문자로 바뀔 수 있어, 날짜·자료 ID·근거의 텍스트 추출도 회귀 검사한다. 렌더링과 복사/검색 정확성은 별도 검증이다.

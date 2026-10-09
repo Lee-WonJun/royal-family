@@ -1,8 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
-import { PDFDocument, PDFName, PDFDict, PDFArray } from 'pdf-lib';
+import { PDFDocument, PDFName, PDFDict, PDFArray, PDFRawStream, decodePDFRawStream } from 'pdf-lib';
 import { makeDocumentPdf } from '../connectors/export/pdf.mjs';
+
+// Decode the exported PDF's own content and ToUnicode maps. This checks copy /
+// search text independently of the font layout that rendered the visible page.
+function exportedText(document) {
+  const decoded = stream => new TextDecoder().decode(decodePDFRawStream(stream).decode());
+  return document.getPages().map(page => {
+    const fonts = new Map();
+    for (const [name, reference] of page.node.Resources().lookup(PDFName.of('Font'), PDFDict).entries()) {
+      const dictionary = document.context.lookup(reference, PDFDict);
+      const cmap = decoded(dictionary.lookup(PDFName.of('ToUnicode'), PDFRawStream));
+      const mapping = new Map([...cmap.matchAll(/<([0-9a-f]+)>\s*<([0-9a-f]+)>/gi)].map(([, id, hex]) =>
+        [id.toUpperCase(), new TextDecoder('utf-16be').decode(Buffer.from(hex, 'hex'))]));
+      fonts.set(name.toString().slice(1), mapping);
+    }
+    const streams = page.node.Contents(); let mapping, output = '';
+    for (let i = 0; i < streams.size(); i++) {
+      const content = decoded(streams.lookup(i, PDFRawStream));
+      for (const match of content.matchAll(/\/([^\s]+)\s+[\d.]+\s+Tf|<([0-9a-f]+)>\s*Tj/gi)) {
+        if (match[1]) mapping = fonts.get(match[1]);
+        else output += (match[2].match(/.{4}/g) || []).map(id => mapping.get(id.toUpperCase()) || '\uFFFD').join('') + '\n';
+      }
+    }
+    return output;
+  }).join('\n');
+}
 
 test('Korean PDF preserves selected version, pages and exact attachment scope', async () => {
   const font = await readFile(new URL('../connectors/export/fonts/Pretendard-Regular.ttf', import.meta.url));
@@ -16,6 +41,10 @@ test('Korean PDF preserves selected version, pages and exact attachment scope', 
   assert.ok(rendered.pages >= 3);
   assert.equal(document.getPageCount(), rendered.pages);
   assert.equal(document.getTitle(), record.title);
+  const copiedText = exportedText(document);
+  assert.ok(copiedText.includes('자료 ID: doc-demo'));
+  assert.ok(copiedText.includes('기록 시각: 2026-10-09T00:00:00Z'));
+  assert.ok(copiedText.includes('source-demo v1 · 00:12'));
   const names = document.catalog.lookup(PDFName.of('Names'), PDFDict).lookup(PDFName.of('EmbeddedFiles'), PDFDict).lookup(PDFName.of('Names'), PDFArray);
   assert.equal(names.size(), 2, 'only the selected original is attached');
   assert.equal(names.get(0).decodeText(), attachment.name);

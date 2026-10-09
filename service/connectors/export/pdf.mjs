@@ -10,7 +10,9 @@ export async function makeDocumentPdf(records, fontBytes, attachments = []) {
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
   // Preserve the full Hangul cmap; subset embedding drops composite glyphs in this font.
-  const font = await pdf.embedFont(fontBytes, { subset: false });
+  // Localized punctuation/ligatures use alternate glyphs absent from pdf-lib's
+  // ToUnicode cmap. Keep source characters searchable and copyable.
+  const font = await pdf.embedFont(fontBytes, { subset: false, features: { calt: false, locl: false, liga: false, clig: false } });
   const supported = new Set(font.getCharacterSet());
   const text = value => {
     const valueText = tidy(value);
