@@ -32,6 +32,15 @@
     ($ :<>
        ($ :div {:class "page-title"} ($ :h1 "종원 명부") ($ :span {:class "page-marker"} "예시 데이터"))
        ($ tabs {:items [[:list "종원 목록"] [:tree "종원 계층"] [:roles "직책·권한"]] :value tab :on-change set-tab})
+       (when (= tab :roles)
+         ($ :section
+            ($ :div {:class "section-toolbar"} ($ :h2 "담당자 이관") ($ button {:on-click #(open-dialog :handover)} "인수인계 기록"))
+            (if (seq (get-in data [:organization :handovers]))
+              (for [h (reverse (get-in data [:organization :handovers]))]
+                ($ :div {:key (:id h) :class "change-row"}
+                   ($ :strong (str (:name (find-id members (:from_id h))) " → " (:name (find-id members (:to_id h))) " · " (:office h)))
+                   ($ :p (:reason h)) ($ :p {:class "muted small"} (:at h))))
+              ($ :p {:class "muted small"} "인수인계 기록이 없습니다."))))
        ($ :div {:class "section-toolbar"}
           ($ :div {:class "filter-pills"}
              (for [[id label n] [[:all "전체" (count members)] [:unjoined "미가입" (count (remove :joined members))]

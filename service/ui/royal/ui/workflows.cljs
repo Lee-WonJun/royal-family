@@ -1,6 +1,7 @@
 (ns royal.ui.workflows
   (:require [uix.core :as uix :refer [defui $]] [clojure.string :as str]
             [royal.ui.parcel-map :refer [parcel-map]] [royal.parcels :as parcels]
+            [royal.ui.meeting-panel :refer [meeting-panel]] [royal.accounting :as accounting]
             [royal.ui.components :as c :refer [icon button badge status tabs field val-of won find-id latest]]))
 
 (defui home-page [{:keys [data navigate select-doc]}]
@@ -84,37 +85,15 @@
                     ($ :label {:key id} ($ :input {:type "radio" :name "response" :value id :checked (= id response) :on-change #(set-response id)}) label)))
                ($ field {:label "의견"} ($ :textarea {:rows 4 :placeholder "선택 입력" :value note :on-change #(set-note (val-of %))}))
                ($ button {:variant "primary" :disabled (or busy outdated) :on-click #(command "consent.respond" {:request_id (:id r) :document_version (:document_version r) :member_id member-id :response response :note note} "응답을 저장했습니다.")} "응답 저장")))
-         ($ :section
-            ($ :div {:class "section-toolbar"}
-               ($ :select {:aria-label "총회 선택" :value (:id meeting) :on-change #(set-meeting (val-of %))}
-                  (for [m (get-in data [:meetings :items])] ($ :option {:key (:id m) :value (:id m)} (:title m))))
-               ($ badge "시연 기록"))
-            ($ :div {:class "meeting-summary"} ($ :h2 (:title meeting)) ($ :p (:agenda meeting))
-               ($ :p {:class "muted"} (str (:date meeting) " · " (:place meeting))))
-            ($ :div {:class "table-scroll"}
-               ($ :table
-                  ($ :thead ($ :tr ($ :th "종원") ($ :th "안내") ($ :th "참석") ($ :th "표결")))
-                  ($ :tbody
-                     (for [id (:targets meeting) :let [m (find-id members id)]]
-                       ($ :tr {:key id} ($ :td (:name m))
-                          (for [[f choices default] [[:notices [["pending" "안내 대기"] ["phone" "전화 안내"] ["mock_delivered" "모의 전달"] ["mock_failed" "모의 실패"]] "pending"]
-                                                   [:attendance [["pending" "미확인"] ["present" "참석"] ["absent" "불참"] ["proxy" "위임"]] "pending"]
-                                                   [:votes [["pending" "미응답"] ["agree" "찬성"] ["disagree" "반대"] ["abstain" "기권"]] "pending"]]]
-                            ($ :td {:key (name f)}
-                               ($ :select {:disabled busy :aria-label (str (:name m) " " (case f :notices "안내" :attendance "참석" "표결"))
-                                           :value (get-in meeting [f (keyword id) :value] default)
-                                           :on-change #(let [v (val-of %)]
-                                                         (if (= v "proxy") (open-dialog :proxy {:meeting meeting :member m})
-                                                           (command "meeting.record" {:id (:id meeting) :expected_version (:version meeting) :member_id id :field (name f) :value v} "기록을 저장했습니다.")))}
-                                  (for [[v label] choices] ($ :option {:key v :value v :disabled (and (= v "pending") (not= f :attendance))} label)))))))))))))))
+         ($ meeting-panel {:data data :busy busy :command command :open-dialog open-dialog :navigate navigate :select-doc select-doc})))))
 
 (defui assets-page [{:keys [data busy command open-dialog navigate select-doc]}]
   (let [[tab set-tab] (uix/use-state :land)
         assets (get-in data [:assets :items]) a (first assets)
         snapshots (get-in data [:assets :snapshots]) current (last (filter #(= (:id a) (:asset_id %)) snapshots))
         txs (get-in data [:accounting :transactions])
-        income (reduce + 0 (map :amount (filter #(= "income" (:direction %)) txs)))
-        expense (reduce + 0 (map :amount (filter #(= "expense" (:direction %)) txs)))]
+        active-ids (set (map :id (accounting/active-transactions (:accounting data))))
+        {:keys [income expense]} (accounting/summary (:accounting data))]
     ($ :<>
        ($ :div {:class "page-title"} ($ :h1 "재산·회계") ($ :span {:class "page-marker"} "예시 데이터"))
        ($ tabs {:items [[:land "토지·계약"] [:ledger "회계"] [:changes "변경 기록"]] :value tab :on-change set-tab})
@@ -142,13 +121,17 @@
                          ($ :div {:key label} ($ :span {:class "muted"} label) ($ :strong (won value)))))
                     ($ :div {:class "table-scroll"}
                        ($ :table
-                          ($ :thead ($ :tr ($ :th "거래일") ($ :th "내용") ($ :th "구분") ($ :th {:class "numeric"} "금액") ($ :th "증빙")))
+                          ($ :thead ($ :tr ($ :th "거래일") ($ :th "내용") ($ :th "구분") ($ :th {:class "numeric"} "금액") ($ :th "증빙") ($ :th "정정")))
                           ($ :tbody (for [tx (reverse txs)] ($ :tr {:key (:id tx)}
                                                               ($ :td (:date tx)) ($ :td (:title tx)) ($ :td (if (= "income" (:direction tx)) "수입" "지출"))
                                                               ($ :td {:class "numeric"} (won (:amount tx)))
                                                               ($ :td (if (:document_id tx)
                                                                        ($ :button {:class "source-link" :on-click #(do (select-doc (:document_id tx)) (navigate :records))} "연결 문서")
-                                                                       ($ :span {:class "muted"} "미등록"))))))))
+                                                                       ($ :span {:class "muted"} "미등록")))
+                                                              ($ :td (if (contains? active-ids (:id tx))
+                                                                       ($ :button {:class "text-button" :on-click #(open-dialog :transaction tx)} "정정")
+                                                                       ($ badge "정정 전"))
+                                                                 (when (:reason tx) ($ :p {:class "muted small"} (:reason tx)))))))))
                     ($ :div {:class "section-toolbar"} ($ :span {:class "muted small"} "시연 금액 · 실제 금융 거래 없음")
                        ($ button {:on-click #(open-dialog :document-create {:title "10월 결산 초안" :body (str "10월 결산\n\n수입: " (won income) "\n지출: " (won expense) "\n잔액: " (won (- income expense)) "\n\n증빙 미등록 거래를 확인해 주세요.")})} "결산 작성")))
          :changes ($ :section

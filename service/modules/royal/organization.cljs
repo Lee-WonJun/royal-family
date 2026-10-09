@@ -38,3 +38,18 @@
 (defn remove-relation [org _ctx p]
   (c/find! (:relations org) (:id p)) (c/text! (:reason p) "정정 사유")
   (update org :relations #(filterv (fn [r] (not= (:id p) (:id r))) %)))
+
+(defn handover [org ctx p]
+  (c/write! ctx)
+  (let [from (member! org (:from_id p)) to (member! org (:to_id p))
+        reason (c/text! (:reason p) "인수인계 내용")]
+    (c/version! from (:from_version p)) (c/version! to (:to_version p))
+    (c/ensure! (not= (:id from) (:id to)) :invalid_input "새 담당자를 선택해 주세요.")
+    (c/ensure! (and (= "관리" (:access from)) (#{"회장" "총무"} (:role from))) :invalid_input "현재 관리 담당자를 선택해 주세요.")
+    (c/ensure! (not= "관리" (:access to)) :invalid_input "이미 관리 권한이 있는 종원입니다.")
+    (-> org
+        (update :members c/replace-item (assoc from :role (if (= "총무" (:role from)) "전임 총무" "종원") :access "열람" :version (inc (:version from))))
+        (update :members c/replace-item (assoc to :role (:role from) :access "관리" :version (inc (:version to))))
+        (update :handovers (fnil conj []) {:id (:id ctx) :from_id (:id from) :to_id (:id to)
+                                          :office (:role from) :reason reason :at (:now ctx)
+                                          :recorded_by (:principal_id ctx) :is_demo true}))))

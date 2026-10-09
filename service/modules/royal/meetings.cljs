@@ -8,18 +8,38 @@
                         :date (c/text! (:date p) "일정") :place (or (:place p) "미정")
                         :agenda (c/text! (:agenda p) "안건") :document_id (:document_id p)
                         :document_version (:document_version p) :targets (vec member-ids)
-                        :attendance {} :votes {} :notices {} :version 1 :is_demo true}))
+                        :regulation_id (:regulation_id p) :regulation_version (:regulation_version p)
+                        :plans {} :attendance {} :delegations {} :votes {} :notices {} :reads {} :opinions {}
+                        :history [] :version 1 :is_demo true}))
+(defn keep-revision [meeting ctx detail]
+  (update meeting :history (fnil conj [])
+          {:version (:version meeting) :snapshot (dissoc meeting :history) :at (:now ctx)
+           :recorded_by (:principal_id ctx) :change detail}))
+(defn revise-meeting [m ctx p]
+  (let [meeting (meeting! m (:id p))]
+    (c/version! meeting (:expected_version p))
+    (c/text! (:reason p) "변경 사유")
+    (doseq [field [:title :date :place :agenda]] (c/text! (get p field) "총회 정보"))
+    (update m :items c/replace-item
+            (-> meeting (keep-revision ctx {:reason (:reason p)})
+                (merge (select-keys p [:title :date :place :agenda :document_id :document_version :regulation_id :regulation_version]))
+                (update :version inc)))))
 (defn record-meeting [m ctx p]
   (let [meeting (meeting! m (:id p)) field (keyword (:field p))]
     (c/version! meeting (:expected_version p))
     (c/ensure! (some #{(:member_id p)} (:targets meeting)) :forbidden "대상 명부에 없는 종원입니다.")
-    (c/ensure! (contains? #{:attendance :votes :notices} field) :invalid_input "기록 종류를 확인해 주세요.")
-    (c/ensure! (contains? (case field :attendance #{"present" "absent" "proxy" "pending"}
-                              :votes #{"agree" "disagree" "abstain"}
-                              :notices #{"phone" "mock_delivered" "mock_failed"}) (:value p)) :invalid_input "기록 값을 확인해 주세요.")
+    (c/ensure! (contains? #{:plans :attendance :delegations :votes :notices :reads :opinions} field) :invalid_input "기록 종류를 확인해 주세요.")
+    (if (= field :opinions) (c/text! (:value p) "의견")
+      (c/ensure! (contains? (case field :plans #{"planned" "not_planned" "pending"}
+                                :attendance #{"present" "absent" "pending"}
+                                :delegations #{"proxy" "none" "pending"}
+                                :votes #{"agree" "disagree" "abstain" "pending"}
+                                :reads #{"read" "unread"}
+                                :notices #{"pending" "phone" "mock_delivered" "mock_failed"}) (:value p)) :invalid_input "기록 값을 확인해 주세요."))
     (when (= "proxy" (:value p)) (c/text! (:note p) "위임 근거"))
     (update m :items c/replace-item
-            (-> meeting (assoc-in [field (keyword (:member_id p))]
+            (-> meeting (keep-revision ctx (select-keys p [:member_id :field :value :note]))
+                (assoc-in [field (keyword (:member_id p))]
                                  {:value (:value p) :note (:note p) :recorded_by (:principal_id ctx) :at (:now ctx) :is_demo true})
                 (update :version inc)))))
 (defn create-request [m ctx p member-ids]

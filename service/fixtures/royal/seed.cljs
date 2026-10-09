@@ -67,12 +67,14 @@
     :summary "대표권 흠결·준재심 요건 관련 판결. 선고일은 원문에서 확인."
     :url "https://www.law.go.kr/LSW/precInfoP.do?precSeq=618205"}])
 (defn initial-state [generation]
-  {:clan_id "demo_a" :generation generation :revision 0 :fixture_version "2026-10-09.2"
+  {:clan_id "demo_a" :generation generation :revision 0 :fixture_version "2026-10-09.3"
    :organization {:name "전주이씨 임영대군파 종중" :members members :relations relations}
    :documents {:records records}
    :meetings {:items [{:id "meeting01" :title "10월 정기총회" :date "2026-10-24T14:00" :place "종중 회관"
                        :agenda "묘역 정비 견적 확인 · 토지 자료 정리" :document_id "doc02" :document_version 1
-                       :targets (mapv :id members) :attendance {} :votes {} :notices {} :version 1 :is_demo true}]
+                       :regulation_id "doc03" :regulation_version 1
+                       :targets (mapv :id members) :plans {} :attendance {} :delegations {} :reads {} :opinions {}
+                       :votes {} :notices {} :history [] :version 1 :is_demo true}]
               :requests [{:id "request01" :title "총회 소집 안내 확인" :document_id "doc02" :document_version 1
                           :targets (mapv :id members) :deadline "2026-11-01T09:00:00Z" :status "open" :version 1 :is_demo true}]
               :responses [] :notifications [{:id "notification01" :request_id "request01" :title "총회 소집 안내 확인" :state "unread" :at "2026-10-09T02:00:00Z"}]}
