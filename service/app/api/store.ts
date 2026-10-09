@@ -37,16 +37,17 @@ export function publicState(state: State) {
   return unwrap(query(state, context(), { query: "snapshot" }));
 }
 export function runQuery(state: State, input: unknown) { return unwrap(query(state, context(), input)); }
-export async function runCommand(command: unknown): Promise<State> {
+export async function runCommandDetailed(command: unknown): Promise<{ state: State; object_id: string | null }> {
   const state = await readState();
   const result = unwrap(execute(state, context(), command));
-  if (result.duplicate) return publicState(state);
+  if (result.duplicate) return { state: publicState(state), object_id: result.result_id || null };
   const next = result.state;
   const saved = await db().prepare("UPDATE workspaces SET revision = ?, generation = ?, body = ? WHERE id = ? AND revision = ? AND generation = ?")
     .bind(next.revision, next.generation, JSON.stringify(next), workspaceId, state.revision, state.generation).run();
   if (saved.meta.changes !== 1) throw new AppError("version_conflict", "다른 변경이 먼저 저장되었습니다. 새로고침 후 다시 시도해 주세요.", 409);
-  return publicState(next);
+  return { state: publicState(next), object_id: result.result_id || null };
 }
+export async function runCommand(command: unknown): Promise<State> { return (await runCommandDetailed(command)).state; }
 export function requireSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) throw new AppError("forbidden", "허용되지 않은 요청입니다.", 403);

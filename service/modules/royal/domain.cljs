@@ -99,16 +99,16 @@
   (let [key (c/text! (:idempotency_key cmd) "요청 키") op (:command cmd)
         prior (get-in state [:idempotency (keyword key)]) fingerprint (pr-str [op (:payload cmd)])]
     (cond
-      (and (= op "reset") (some #{key} (:reset_keys state))) {:state state :duplicate true}
-      prior (do (c/ensure! (= fingerprint prior) :invalid_input "같은 요청 키에 다른 내용이 있습니다.") {:state state :duplicate true})
+      (and (= op "reset") (some #{key} (:reset_keys state))) {:state state :duplicate true :result_id (:result_id prior)}
+      prior (do (c/ensure! (= fingerprint (:fingerprint prior)) :invalid_input "같은 요청 키에 다른 내용이 있습니다.") {:state state :duplicate true :result_id (:result_id prior)})
       :else
       (do (c/ensure! (= (:generation cmd) (:generation state)) :stale_generation "초기화 전 작업입니다. 새로고침해 주세요.")
           (c/ensure! (= (:expected_revision cmd) (:revision state)) :version_conflict "다른 변경이 먼저 저장되었습니다. 새로고침 후 다시 시도해 주세요.")
           (let [next (-> (apply-command state ctx cmd)
                          (update :revision inc)
-                         (assoc-in [:idempotency (keyword key)] fingerprint)
+                         (assoc-in [:idempotency (keyword key)] {:fingerprint fingerprint :result_id (:id ctx)})
                          (update :audit conj (c/audit ctx op (select-keys (:payload cmd) [:id :member_id :document_id :request_id :feature :mode :reason]))))]
-            {:state next :duplicate false})))))
+            {:state next :duplicate false :result_id (:id ctx)})))))
 (defn boundary [f]
   (try (clj->js {:ok true :value (f)})
        (catch :default e (clj->js {:ok false :error {:code (name (or (:code (ex-data e)) :invalid_input)) :message (.-message e)}}))))
