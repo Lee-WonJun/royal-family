@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     if (!await verifyDeveloperCode(code, env.AI_UNLOCK_CODE)) throw new AppError("invalid_code", "코드를 확인해 주세요.", 403);
     const state = await readState();
     const token = await issueGrant(persona.id, state.generation, env.AI_UNLOCK_CODE);
-    const response = json({ ok: true, access: { configured: true, unlocked: true, ready_features: [] } });
+    const response = json({ ok: true, access: { configured: true, unlocked: true, expires_at: Number(token.split(":")[2]), ready_features: [] } });
     response.headers.append("Set-Cookie", cookie(request, "rf_ai_grant", token, 1800));
     return response;
   } catch (e) { return errorResponse(e); }
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     requireSameOrigin(request);
-    const response = json({ ok: true, access: { ...(await accessStatus(request, await readState())), unlocked: false } });
+    const response = json({ ok: true, access: { ...(await accessStatus(request, await readState())), unlocked: false, expires_at: null } });
     response.headers.append("Set-Cookie", cookie(request, "rf_ai_grant", "", 0));
     return response;
   } catch (e) { return errorResponse(e); }

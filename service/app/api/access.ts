@@ -18,9 +18,10 @@ export function cookie(request: Request, name: string, value: string, maxAge?: n
 export async function accessStatus(request: Request, state: State) {
   const persona = demoPersona(request);
   const code = env.AI_UNLOCK_CODE || "";
-  return { configured: code.length >= 16,
-    unlocked: !!persona && await verifyGrant(cookieValue(request, "rf_ai_grant"), persona.id, state.generation, code),
-    ready_features: [] as string[] };
+  const token = cookieValue(request, "rf_ai_grant");
+  const unlocked = !!persona && await verifyGrant(token, persona.id, state.generation, code);
+  return { configured: code.length >= 16, unlocked,
+    expires_at: unlocked ? Number(token.split(":")[2]) : null, ready_features: [] as string[] };
 }
 export async function requireAiGrant(request: Request, state: State) {
   if (!(await accessStatus(request, state)).unlocked) throw new AppError("developer_code_required", "실제 호출을 켜려면 개발자 코드를 확인해 주세요.", 403);

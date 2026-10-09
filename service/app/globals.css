@@ -2139,3 +2139,41 @@ td:first-child,th:first-child {
 .table-scroll {
   position:relative
 }
+
+.account-screen { min-height:100dvh; padding:32px 36px 50px; background:#fafafb; }
+.account-brand { display:flex; align-items:center; justify-content:space-between; max-width:1040px; margin:0 auto; }
+.account-brand .brand { padding:0; font-size:22px; }
+.account-content { max-width:1040px; margin:72px auto 0; }
+.account-content h1 { font-size:30px; }
+.account-intro { font-size:16px; margin-top:12px; }
+.account-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:34px; }
+.account-card { border:1px solid #e0e3e8; border-radius:9px; padding:21px 23px; text-align:left; background:#fff; min-width:0; }
+.account-card:hover { border-color:#9ea8b5; background:#fff; }
+.account-card:disabled { opacity:.5; }
+.account-identity { display:flex; align-items:center; gap:10px; }
+.account-identity strong { font-size:18px; font-weight:620; }
+.account-identity>.icon { margin-left:auto; color:#7b8490; }
+.account-role { color:#69737f; font-size:14px; }
+.account-scenario { display:block; margin:12px 0 0 44px; font-size:14px; color:#68717e; }
+.account-footnote { margin-top:25px; font-size:13px; }
+.code-form { border:1px solid #e2e5e9; border-radius:7px; padding:16px; margin:18px 0; }
+.code-form .field { margin:0 0 8px; }
+.code-input-row { display:flex; align-items:center; gap:8px; }
+.code-input-row input { min-width:0; flex:1; }
+.code-error { margin-top:12px; color:#a64242; font-size:13px; }
+.access-unlocked { display:flex; justify-content:space-between; gap:12px; align-items:center; margin:12px 0; }
+.switch.on { background:#536c85; }
+.switch.on span { margin-left:15px; }
+@media(max-width:640px) {
+  .account-screen { padding:24px 20px 36px; }
+  .account-brand .brand { font-size:20px; }
+  .account-content { margin-top:42px; }
+  .account-content h1 { font-size:27px; }
+  .account-intro { font-size:14px; }
+  .account-grid { grid-template-columns:1fr; gap:10px; margin-top:26px; }
+  .account-card { padding:17px 18px; }
+  .account-scenario { font-size:13px; margin-left:0; }
+  .account-footnote { font-size:12px; }
+  .code-form { padding:14px; }
+  .access-unlocked { flex-wrap:wrap; }
+}

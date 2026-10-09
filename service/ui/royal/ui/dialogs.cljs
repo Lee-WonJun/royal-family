@@ -100,16 +100,30 @@
 (def features [["stt" "음성 전사"] ["extract" "문서 추출"] ["search" "근거 검색"] ["draft" "문서 작성"]
                ["legal" "법률·문제 확인"] ["recommend" "전문가 추천"] ["land" "토지 조회"] ["notify" "외부 알림"]
                ["consult" "전문가 접수"] ["signature" "전자서명"] ["finance" "금융 거래"] ["events" "ChatGPT 알림"]])
-(defui settings-panel [{:keys [data on-close open-dialog]}]
+(defui settings-panel [{:keys [data access unlock lock command on-close open-dialog]}]
+  (let [[code set-code] (uix/use-state "") [error set-error] (uix/use-state nil) [unlocking set-unlocking] (uix/use-state false)]
   ($ c/dialog {:title "설정" :on-close on-close :class "settings-dialog"}
-     ($ :div {:class "section-label"} ($ :h3 "실제 호출") ($ badge "모두 예시 모드"))
+     ($ :div {:class "section-label"} ($ :h3 "실제 호출") ($ badge (if (:unlocked access) "잠금 해제" "잠김")))
+     (if (:unlocked access)
+       ($ :div {:class "access-unlocked"} ($ :span {:class "muted small"} "30분 동안 전환할 수 있습니다.") ($ :button {:class "text-button" :on-click lock} "다시 잠그기"))
+       ($ :form {:class "code-form" :on-submit (fn [e] (.preventDefault e) (set-unlocking true) (set-error nil)
+                                               (-> (unlock code) (.then #(set-code "")) (.catch #(set-error (.-message %))) (.finally #(set-unlocking false))))}
+          ($ field {:label "개발자 코드"} ($ :div {:class "code-input-row"}
+                                            ($ :input {:type "password" :aria-label "개발자 코드" :auto-complete "off" :required true :value code :max-length 256
+                                                       :placeholder "비밀코드 입력" :on-change #(set-code (val-of %))})
+                                            ($ button {:type "submit" :disabled unlocking} (if unlocking "확인 중" "확인"))))
+          ($ :p {:class "muted small"} "입력코드는 개발자에게 직접 문의해 주세요.")
+          (when error ($ :p {:class "code-error" :role "alert"} error))))
      ($ :p {:class "muted small"} "연결된 기능만 실제 호출로 바꿀 수 있습니다.")
      ($ :div {:class "settings-list"}
-        (for [[id label] features]
+        (for [[id label] features :let [live? (= "live" (get-in data [:settings :features (keyword id)]))
+                                       ready? (some #{id} (:ready_features access))]]
           ($ :div {:key id :class "setting-row"}
-             ($ :span label) ($ :span {:class "muted small"} "미연결")
-             ($ :button {:class "switch" :type "button" :role "switch" :aria-checked false :aria-label (str label " 실제 호출")
-                         :disabled true :title "실제 연결 준비 필요"} ($ :span)))))
+             ($ :span label) ($ :span {:class "muted small"} (if ready? (if live? "실제" "예시") "미연결"))
+             ($ :button {:class (str "switch " (when live? "on")) :type "button" :role "switch" :aria-checked live? :aria-label (str label " 실제 호출")
+                         :disabled (and (not live?) (or (not (:unlocked access)) (not ready?)))
+                         :title (if (not (:unlocked access)) "개발자 코드 확인 필요" (if ready? "실제 호출 전환" "실제 연결 준비 필요"))
+                         :on-click #(command "settings.set" {:feature id :mode (if live? "mock" "live")} "호출 설정을 저장했습니다.")} ($ :span)))))
      ($ :section {:class "settings-section"}
         ($ :h3 "호출 기록")
         (if (seq (:jobs data))
@@ -118,4 +132,4 @@
                ($ badge "예시") ($ c/status {:value (:status job)})))
           ($ :p {:class "muted small"} "아직 호출 기록이 없습니다.")))
      ($ :section {:class "settings-section"} ($ :h3 "시연 데이터")
-        ($ button {:icon-name :refresh :on-click #(open-dialog :reset)} "초기 데이터로 되돌리기"))))
+        ($ button {:icon-name :refresh :on-click #(open-dialog :reset)} "초기 데이터로 되돌리기")))))
