@@ -1,0 +1,65 @@
+{
+  "captured_at_kst": "2026-10-09T14:18:49.454315+09:00",
+  "source": "http://127.0.0.1:5174/",
+  "mode": "현재 프로젝트에서 분리 실행한 캡처 서버. RF_FORCE_MOCK=1. 화면 이동과 읽기만 수행.",
+  "screen_aspects": {
+    "macbook": [
+      819,
+      514
+    ],
+    "phone": [
+      438,
+      775
+    ]
+  },
+  "files": [
+    {
+      "file": "ui-accounting.jpg",
+      "width": 1638,
+      "height": 1028,
+      "sha256": "711e1ea3188ba5f837f2cd5a186c8bb89fd443a5c6d9a598159046400897658b"
+    },
+    {
+      "file": "ui-consent-phone.jpg",
+      "width": 438,
+      "height": 775,
+      "sha256": "ae6d6b23a7e59f2a589780560103f218de758dd892ba2a6e5134c8275f2a8124"
+    },
+    {
+      "file": "ui-draft.jpg",
+      "width": 1638,
+      "height": 1028,
+      "sha256": "05d8ad9c07c0645a55c9fb9792f042f368a9c52ada4f3c87f827034ceb59f1bd"
+    },
+    {
+      "file": "ui-home.jpg",
+      "width": 1638,
+      "height": 1028,
+      "sha256": "306c143d18807a8d56782ed9157ed0b97e95fb87a3c55fd73aae0fbc0ca9beaa"
+    },
+    {
+      "file": "ui-land.jpg",
+      "width": 1638,
+      "height": 1028,
+      "sha256": "a0431e6b479674cd5c726092f77ff37273c3d9bca5f7cceaa33001c463e2ed67"
+    },
+    {
+      "file": "ui-legal.jpg",
+      "width": 1638,
+      "height": 1028,
+      "sha256": "44a346f4bfb75a5d18b5c0a9de879e8313e0b321836be54c92031449d4fb75a3"
+    },
+    {
+      "file": "ui-preparation.jpg",
+      "width": 1638,
+      "height": 1028,
+      "sha256": "83c181d73cf0330d21cd45d85fde364214a97c356bd7e47795da7ad6b64f5815"
+    },
+    {
+      "file": "ui-records-phone.jpg",
+      "width": 438,
+      "height": 775,
+      "sha256": "bd2d418027be273781837fd9c40f38dd7acecee135e7cec0864f054749b9ec1f"
+    }
+  ]
+}
