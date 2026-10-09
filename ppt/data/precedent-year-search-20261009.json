@@ -1,0 +1,49 @@
+{
+  "retrieved_at": "2026-10-09",
+  "source": "https://www.law.go.kr/precSc.do?menuId=7&query=%EC%A2%85%EC%A4%91",
+  "court_scope": "전체",
+  "case_scope": "전체",
+  "keyword_field": "판례본문",
+  "keyword": "종중",
+  "date_field": "선고일자",
+  "rows": [
+    {
+      "year": 2021,
+      "entries": 32,
+      "start": "20210101",
+      "end": "20211231",
+      "evidence": "evidence/precedent-years/2021.jpg"
+    },
+    {
+      "year": 2022,
+      "entries": 37,
+      "start": "20220101",
+      "end": "20221231",
+      "evidence": "evidence/precedent-years/2022.jpg"
+    },
+    {
+      "year": 2023,
+      "entries": 34,
+      "start": "20230101",
+      "end": "20231231",
+      "evidence": "evidence/precedent-years/2023.jpg"
+    },
+    {
+      "year": 2024,
+      "entries": 23,
+      "start": "20240101",
+      "end": "20241231",
+      "evidence": "evidence/precedent-years/2024.jpg"
+    },
+    {
+      "year": 2025,
+      "entries": 12,
+      "start": "20250101",
+      "end": "20251231",
+      "evidence": "evidence/precedent-years/2025.jpg"
+    }
+  ],
+  "measure": "공개 판례의 선고연도별 검색 결과 수",
+  "boundary": "같은 사건의 심급과 요약, 조세 사건 등이 포함될 수 있으며 전국의 연간 신규 분쟁이나 고유 사건 수가 아님. 공개 수록 범위의 차이 때문에 분쟁 증감을 결론 내릴 수 없음.",
+  "five_year_search_entries": 138
+}
